@@ -10,3 +10,4 @@ KHAKI = (158, 154, 117)  # Paths
 DARK_BLUE = (28, 34, 46)  # Water
 OBSTACLE = pygame.Color("#9E9E9E")  # Obstacles
 GOLD = (255, 223, 0)
+BLACK = (0, 0, 0)

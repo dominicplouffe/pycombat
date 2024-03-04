@@ -18,18 +18,27 @@ from support import check_overlap
 
 random.seed(0)
 
+
 class Level:
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        client,
+        lobby_name=None,
+        username=None,
+        vs_computer=False,
+        vs_network=False,
+    ) -> None:
         octaves = 12
         freq = 240
         scale = 500
 
         self.player_score = 0
         self.enemy_score = 0
+        self.vs_computer = vs_computer
 
         self.display_surface = pygame.display.get_surface()
-        self.obstacles = self.generate_obstacles(10)
+        self.obstacles = self.generate_obstacles(10 if self.vs_computer else 0)
         self.coin = self.generate_coin()
         self.coin.generate(False)
 
@@ -41,16 +50,39 @@ class Level:
         self.player = Player(
             self.all_sprites, self.obstacles, self.coin, is_enemy=False
         )
-        self.enemy = Player(self.all_sprites, self.obstacles, self.coin, is_enemy=True)
+        self.enemy = None
+        if self.vs_computer:
+            self.enemy = Player(
+                self.all_sprites, self.obstacles, self.coin, is_enemy=True
+            )
+        if vs_network:
+            self.enemy = Player(
+                self.all_sprites,
+                self.obstacles,
+                self.coin,
+                is_enemy=False,
+                is_networked=True,
+            )
+
+        self.client = client
+        self.client.update_callback = self.update_callback
+        self.lobby_name = lobby_name
+        self.username = username
+
+        self.dt_sum = 0
 
     def update(self, dt) -> None:
         self.display_surface.fill(DARK_GREEN)
         self.draw_terrain(self.display_surface, self.terrain)
         self.all_sprites.update(dt)
-        self.player.update(dt)
-        self.enemy.update(dt)
         self.all_sprites.draw(self.display_surface)
         self.draw_score()
+
+        self.dt_sum += dt
+        if int(self.dt_sum * 100) % 2 == 0:
+            self.client.send_message(
+                f"update {self.lobby_name} {self.username} {self.player.rect.x} {self.player.rect.y}"
+            )
 
     def generate_obstacles(self, num_obstacles) -> None:
         obstacles = pygame.sprite.Group()
@@ -116,3 +148,7 @@ class Level:
             self.player_score += 1
         else:
             self.enemy_score += 1
+
+    def update_callback(self, x: int, y: int) -> None:
+        self.enemy.rect.x = int(x)
+        self.enemy.rect.y = int(y)

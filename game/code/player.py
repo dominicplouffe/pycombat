@@ -14,6 +14,7 @@ class Player(pygame.sprite.Sprite):
         obstacles: pygame.sprite.Group,
         coin: pygame.sprite.Sprite,
         is_enemy: bool = True,
+        is_networked: bool = False,
     ) -> None:
         super().__init__(groups)
 
@@ -24,12 +25,13 @@ class Player(pygame.sprite.Sprite):
         self.obstacles = obstacles
         self.coin = coin
         self.rect = self.image.get_frect(topleft=((10, 10)))
-        self.direction = vector()
-        self.speed = 200 if not is_enemy else 200
+        self.direction = vector(0, 0)
+        self.speed = 350 if not is_enemy else 200
         self.gun_pos = vector(0, 0)
         self.is_enemy = is_enemy
         self.previous_direction = vector()
         self.collide_dir = None
+        self.is_networked = is_networked
 
     def update(self, dt: float) -> None:
         self.animate(dt)
@@ -40,6 +42,8 @@ class Player(pygame.sprite.Sprite):
         self.move(dt)
 
     def input(self) -> None:
+        if self.is_networked:
+            return vector(0, 0)
         keys = pygame.key.get_pressed()
         input_vector = vector(0, 0)
 
@@ -84,7 +88,7 @@ class Player(pygame.sprite.Sprite):
             self.rect.topleft -= self.direction * self.speed * dt
 
         if self.collide_coin(self):
-            self.coin.generate(True, is_enemy=self.is_enemy)
+            self.coin.generate(True, is_enemy=self.is_enemy or self.is_networked)
 
     def collision(self, collider: pygame.sprite.Sprite) -> bool:
         if collider.rect.left < 0 or collider.rect.right > WINDOW_WIDTH:
