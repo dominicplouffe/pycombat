@@ -1,20 +1,17 @@
 import pygame
-from player import Player
 import random
-import numpy as np
-from noise import pnoise2
 from config import (
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
-    DARK_BROWN,
+    WORLD_WIDTH,
+    WORLD_HEIGHT,
     DARK_GREEN,
-    KHAKI,
-    DARK_BLUE,
-    OBSTACLE,
+    OBJ_WIDTH,
+    OBJ_HEIGHT,
 )
-from sprite import RoundedSprite, RectSprite
-from coin import Coin
-from support import check_overlap
+
+from player import Player
+from maze import LevelMaze
 
 random.seed(0)
 
@@ -28,38 +25,35 @@ class Level:
         username=None,
         vs_computer=False,
         vs_network=False,
+        single_player=False,
     ) -> None:
-        octaves = 12
-        freq = 240
-        scale = 500
 
         self.player_score = 0
         self.enemy_score = 0
         self.vs_computer = vs_computer
+        self.maze = LevelMaze(self.increase_score)
 
         self.display_surface = pygame.display.get_surface()
-        self.obstacles = self.generate_obstacles(10 if self.vs_computer else 0)
-        self.coin = self.generate_coin()
-        self.coin.generate(False)
+        self.world = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
+        self.bullets = pygame.sprite.Group()
 
-        self.terrain = self.generate_terrain(
-            WINDOW_WIDTH, WINDOW_HEIGHT, octaves, freq, scale
+        self.all_sprites = pygame.sprite.Group(
+            *self.maze.obstacles, self.maze.hit_obstacles, self.maze.coin, self.bullets
         )
-
-        self.all_sprites = pygame.sprite.Group(*self.obstacles, self.coin)
         self.player = Player(
-            self.all_sprites, self.obstacles, self.coin, is_enemy=False
+            self.all_sprites,
+            self.maze,
+            is_enemy=False,
+            bullets=self.bullets,
+            all_sprites=self.all_sprites,
         )
         self.enemy = None
-        if self.vs_computer:
-            self.enemy = Player(
-                self.all_sprites, self.obstacles, self.coin, is_enemy=True
-            )
-        if vs_network:
+        if self.vs_computer and not single_player:
+            self.enemy = Player(self.all_sprites, self.maze, is_enemy=True)
+        if vs_network and not single_player:
             self.enemy = Player(
                 self.all_sprites,
-                self.obstacles,
-                self.coin,
+                self.maze,
                 is_enemy=False,
                 is_networked=True,
             )
@@ -71,68 +65,44 @@ class Level:
 
         self.dt_sum = 0
 
-    def update(self, dt) -> None:
-        self.display_surface.fill(DARK_GREEN)
-        self.draw_terrain(self.display_surface, self.terrain)
-        self.all_sprites.update(dt)
-        self.all_sprites.draw(self.display_surface)
-        self.draw_score()
+    def update(self, dt, event) -> None:
+        self.all_sprites = pygame.sprite.Group(
+            *self.maze.hit_obstacles, self.maze.obstacles, self.maze.coin, self.bullets, self.player
+        )
+        if self.enemy:
+            self.all_sprites.add(self.enemy)
+
+        self.world.fill(DARK_GREEN)
+        self.all_sprites.update(dt, event)
+        self.all_sprites.draw(self.world)
+        self.draw_viewport()
 
         self.dt_sum += dt
         if int(self.dt_sum * 100) % 2 == 0:
             self.client.send_message(
                 f"update {self.lobby_name} {self.username} {self.player.rect.x} {self.player.rect.y}"
             )
+        self.draw_score()
 
-    def generate_obstacles(self, num_obstacles) -> None:
-        obstacles = pygame.sprite.Group()
+    def draw_viewport(self) -> None:
+        view_x = 0
+        view_y = 0
+        if self.player.rect.x > WINDOW_WIDTH // 2:
+            view_x = self.player.rect.x - (WINDOW_WIDTH // 2)
 
-        for _ in range(num_obstacles):
-            size = random.randint(50, 50)
-            valid_square = False
+            if view_x > WINDOW_WIDTH - OBJ_WIDTH:
+                view_x = WINDOW_WIDTH - OBJ_WIDTH
+        if self.player.rect.y > WINDOW_HEIGHT // 2:
+            view_y = self.player.rect.y - (WINDOW_HEIGHT // 2)
 
-            while not valid_square:
-                x = random.randint(
-                    100, WINDOW_WIDTH - size - 100
-                )  # Ensure square is not in the top left corner
-                y = random.randint(100, WINDOW_HEIGHT - size - 100)
+            if view_y > WINDOW_HEIGHT - OBJ_HEIGHT:
+                view_y = WINDOW_HEIGHT - OBJ_HEIGHT
 
-                new_square = RectSprite(OBSTACLE, size, size, x, y)
-                if (
-                    not check_overlap(new_square, obstacles, inflate=True)
-                    and x > 100
-                    and y > 100
-                ):
-                    valid_square = True
-                    obstacles.add(new_square)
-
-        return obstacles
-
-    def generate_terrain(self, width, height, octaves, freq, scale):
-        terrain = np.zeros((width, height, 3), dtype=np.uint8)
-        for x in range(width):
-            for y in range(height):
-                # Generate noise value
-                noise_val = pnoise2(x / freq, y / freq, octaves=octaves) * scale
-
-                # Map the noise value to a color
-                if noise_val < 30:
-                    color = DARK_GREEN
-                elif 30 <= noise_val < 40:
-                    color = DARK_BROWN
-                elif 40 <= noise_val < 70:
-                    color = KHAKI
-                else:
-                    color = DARK_BLUE
-
-                terrain[x, y] = color
-        return terrain
-
-    def draw_terrain(self, screen, terrain):
-        pygame.surfarray.blit_array(screen, terrain)
-
-    def generate_coin(self) -> Coin:
-        return Coin(50, self.obstacles, self.increase_score)
+        self.display_surface.blit(
+            self.world,
+            (0, 0),
+            (view_x, view_y, WINDOW_WIDTH, WINDOW_HEIGHT),
+        )
 
     def draw_score(self) -> None:
         font = pygame.font.Font(None, 36)

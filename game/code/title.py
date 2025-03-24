@@ -24,6 +24,9 @@ class Title:
         self.btn_vs_human = pygame.Rect(100, 200, 200, 50)
         button_text_human = "VS Human"
 
+        self.btn_vs_none = pygame.Rect(100, 300, 200, 50)
+        button_text_none = "Single Player"
+
         # Text input box properties
         # input_box_color = WHITE
         # input_box_rect = pygame.Rect(100, 200, 200, 50)
@@ -45,6 +48,12 @@ class Title:
                 button_surface, (self.btn_vs_human.x + 20, self.btn_vs_human.y + 10)
             )
 
+            pygame.draw.rect(self.display_surface, button_color, self.btn_vs_none)
+            button_surface = font.render(button_text_none, True, BLACK)
+            self.display_surface.blit(
+                button_surface, (self.btn_vs_none.x + 20, self.btn_vs_none.y + 10)
+            )
+
         # Draw the text input box
         # pygame.draw.rect(self.display_surface, input_box_color, input_box_rect)
         # text_surface = font.render(input_text, True, BLACK)
@@ -61,6 +70,9 @@ class Title:
             elif self.btn_vs_human.collidepoint(event.pos):
                 self.button_handled = True
                 change_state("vs_human")
+            elif self.btn_vs_none.collidepoint(event.pos):
+                self.button_handled = True
+                change_state("single_player")
 
         # Text input event
         # if event.type == pygame.KEYDOWN:

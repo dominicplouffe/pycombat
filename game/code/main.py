@@ -12,17 +12,21 @@ class Game:
         pygame.init()
         self.display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("PyCombat")
+        
+        self.game_state = "title"
         self.clock = pygame.time.Clock()
         self.level = None
         self.title = Title()
-        self.game_state = "title"
+        
         self.client = TCPClientThread()
+        
         self.client.start()
         self.client_name = str(uuid.uuid4())
         self.lobby_name = "mylobby"
 
     def run(self) -> None:
         running = True
+
         while running:
             dt = self.clock.tick() / 1000
             for event in pygame.event.get():
@@ -31,8 +35,9 @@ class Game:
             if self.game_state == "title":
                 self.title.update(event, self.change_state)
             elif self.game_state == "playing":
-                self.level.update(dt)
+                self.level.update(dt, event)
             pygame.display.flip()
+
         self.client.stop()
         self.client.join()
         pygame.quit()
@@ -52,6 +57,9 @@ class Game:
                 vs_computer=False,
                 vs_network=True,
             )
+            self.game_state = "playing"
+        elif state == "single_player":
+            self.level = Level(self.client, single_player=True)
             self.game_state = "playing"
 
 
