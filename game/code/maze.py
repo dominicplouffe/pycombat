@@ -1,14 +1,15 @@
 import pygame
-from config import DARK_BROWN, OBJ_WIDTH, OBJ_HEIGHT, SAND
+from config import OBJ_WIDTH, OBJ_HEIGHT, SAND
 from sprite import RectSprite
 from mazelib.generate.Prims import Prims
 from mazelib import Maze
 from coin import Coin
+from wall import Wall
 
 
 class LevelMaze:
 
-    def __init__(self, increase_score, world_width=18, world_height=10, seed=0) -> None:
+    def __init__(self, increase_score, world_width=18, world_height=10, seed=10) -> None:
         self.grid = []
         self.hit_grid = []
         self.world_height = world_height
@@ -38,7 +39,7 @@ class LevelMaze:
             for x, cell in enumerate(row):
                 if cell == 1:
                     pos_x, pos_y = x * OBJ_WIDTH, y * OBJ_HEIGHT
-                    obj_rect = RectSprite(SAND, OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y)
+                    obj_rect = RectSprite(SAND ,OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y)
                     obj_hit = RectSprite(SAND, OBJ_WIDTH - 10, OBJ_HEIGHT - 10, pos_x + 5, pos_y + 5)
                     obstacles.add(obj_rect)
                     hit_obstacles.add(obj_hit)

@@ -6,13 +6,13 @@ from maze import LevelMaze
 
 
 class Bullet(pygame.sprite.Sprite):
-
     def __init__(
         self,
         groups: pygame.sprite.Group,
         maze: LevelMaze,
         gun_pos: vector,
-        player_topleft : vector,
+        player_topleft: vector,
+        callback: callable = None,
     ) -> None:
         super().__init__(groups)
         self.direction = vector(gun_pos[0], gun_pos[1])
@@ -39,6 +39,8 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 500
         self.maze = maze
 
+        self.callback = callback
+
     def update(self, dt: float, event) -> None:
         self.move(dt)
 
@@ -48,3 +50,6 @@ class Bullet(pygame.sprite.Sprite):
 
         if self.maze.bullet_hit_obstacle(CollideSprite(self.collider_rect)):
             self.kill()
+
+            if self.callback:
+                self.callback()

@@ -14,6 +14,7 @@ DARK_BLUE = (28, 34, 46)  # Water
 OBSTACLE = pygame.Color("#9E9E9E")  # Obstacles
 GOLD = (255, 223, 0)
 BLACK = (0, 0, 0)
+RED = (255, 0, 0)
 SAND = (237, 201, 175)
 
 OBJ_WIDTH = 70

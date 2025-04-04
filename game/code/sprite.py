@@ -1,8 +1,9 @@
 import pygame
+from wall import Wall
 
 
 class RectSprite(pygame.sprite.Sprite):
-    def __init__(self, color, width, height, x, y):
+    def __init__(self, color: str, width: int, height: int, x: int, y: int) -> None:
         super().__init__()
         self.image = pygame.Surface([width, height])
         if color:
@@ -13,13 +14,23 @@ class RectSprite(pygame.sprite.Sprite):
 
 
 class CollideSprite(pygame.sprite.Sprite):
-    def __init__(self, rect):
+    def __init__(self, rect: pygame.rect.FRect) -> None:
         super().__init__()
         self.rect = rect
 
 
 class RoundedSprite(pygame.sprite.Sprite):
-    def __init__(self, color, border_color, width, height, x, y, border=5, radius=10):
+    def __init__(
+        self,
+        color: str,
+        border_color: str,
+        width: int,
+        height: int,
+        x: int,
+        y: int,
+        border: int = 5,
+        radius: int = 10,
+    ) -> None:
         super().__init__()
         self.image = pygame.Surface(
             (width, height), pygame.SRCALPHA

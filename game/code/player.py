@@ -2,8 +2,9 @@ import pygame
 from pygame import Vector2 as vector
 from support import import_folder_dict
 from copy import deepcopy
-from config import ANIMATION_SPEED
-from sprite import CollideSprite
+from config import ANIMATION_SPEED, BLACK
+from config import WINDOW_WIDTH, WINDOW_HEIGHT
+from sprite import CollideSprite, RectSprite
 import random
 from bullet import Bullet
 from maze import LevelMaze
@@ -45,6 +46,11 @@ class Player(pygame.sprite.Sprite):
         self.bullet_timer = Timer(2000)
         self.bullet_timer.activate()
 
+        self.hit_rect = RectSprite(
+            BLACK, self.rect.width - 10, self.rect.height - 10, 0, 0
+        )
+        self.hit_rect.rect.center = self.rect.center
+
     def update(self, dt: float, event) -> None:
         self.animate(dt)
         if not self.is_enemy:
@@ -62,9 +68,6 @@ class Player(pygame.sprite.Sprite):
 
         keys = pygame.key.get_pressed()
         input_vector = vector(0, 0)
-
-        # if event.type == pygame.TEXTINPUT:
-        #     print(event.type)
 
         if keys[pygame.K_RIGHT]:
             input_vector.x += 1
@@ -86,8 +89,8 @@ class Player(pygame.sprite.Sprite):
             if self.gun_pos.y != 1:
                 self.change_gun_direction(vector(0, 1))
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if not self.bullet_timer.active and event.button == pygame.BUTTON_LEFT and not self.bullet_pressed:
+        if keys[pygame.K_SPACE]:
+            if not self.bullet_timer.active and not self.bullet_pressed:
                 self.bullet_pressed = True
                 self.bullet_timer.activate()
                 self.bullets.add(
@@ -96,16 +99,9 @@ class Player(pygame.sprite.Sprite):
                         self.maze,
                         self.gun_pos,
                         self.rect.topleft,
+                        callback=self.stop_bullet,
                     )
                 )
-            if event.button == pygame.BUTTON_RIGHT:
-                self.is_moving = True
-
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == pygame.BUTTON_LEFT:
-                self.bullet_pressed = False
-            if event.button == pygame.BUTTON_RIGHT:
-                self.is_moving = False
 
         direction = vector(input_vector.x, input_vector.y)
         direction.x = input_vector.normalize().x if input_vector else input_vector.x
@@ -124,8 +120,10 @@ class Player(pygame.sprite.Sprite):
 
     def move(self, dt: float) -> None:
         self.rect.topleft += self.direction * self.speed * dt
-        if self.maze.hit_obstacle(self):
+        self.hit_rect.rect.center = self.rect.center
+        if self.maze.hit_obstacle(self.hit_rect):
             self.rect.topleft -= self.direction * self.speed * dt
+            self.hit_rect.rect.center = self.rect.center
             if abs(self.direction.x) > 0:
                 self.view_x = self.view_x - self.direction.x
             if abs(self.direction.y) > 0:
@@ -133,6 +131,10 @@ class Player(pygame.sprite.Sprite):
 
         if self.maze.collide_coin(self):
             self.maze.coin.generate(True, is_enemy=self.is_enemy or self.is_networked)
+
+    def stop_bullet(self) -> None:
+        self.bullet_pressed = False
+        self.bullet_timer.deactivate()
 
     def change_gun_direction(self, v: vector):
         if v.x == 1:
@@ -147,7 +149,6 @@ class Player(pygame.sprite.Sprite):
         self.gun_pos = v
 
     def choose_enemy_move(self) -> None:
-
         new_rect = CollideSprite(self.rect.copy())
         if self.collide_dir:
             if self.collide_dir == "x":
@@ -182,13 +183,13 @@ class Player(pygame.sprite.Sprite):
         self.collide_dir = None
 
         move_x, move_y = 0, 0
-        if new_rect.rect.x < self.coin.rect.x:
+        if new_rect.rect.x < self.maze.coin.rect.x:
             move_x = 1
-        elif new_rect.rect.x > self.coin.rect.x:
+        elif new_rect.rect.x > self.maze.coin.rect.x:
             move_x = -1
-        if new_rect.rect.y < self.coin.rect.y:
+        if new_rect.rect.y < self.maze.coin.rect.y:
             move_y = 1
-        elif new_rect.rect.y > self.coin.rect.y:
+        elif new_rect.rect.y > self.maze.coin.rect.y:
             move_y = -1
 
         new_rect.rect.x += move_x
@@ -223,3 +224,14 @@ class Player(pygame.sprite.Sprite):
             self.previous_direction = direction.copy()
 
         return direction
+
+    def collision(self, collider: pygame.sprite.Sprite) -> bool:
+        if collider.rect.left < 0 or collider.rect.right > WINDOW_WIDTH:
+            return "border"
+        if collider.rect.top < 0 or collider.rect.bottom > WINDOW_HEIGHT:
+            return "border"
+
+        for obstacle in self.obstacles:
+            if pygame.sprite.collide_rect(collider, obstacle):
+                return "object"
+        return None

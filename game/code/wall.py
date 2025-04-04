@@ -11,7 +11,7 @@ class Wall(pygame.sprite.Sprite):
         y: int,
     ) -> None:
         super().__init__(groups)
-        self.image = import_image("game", "support", "images", "wall", "wall2")
+        self.image = import_image("game", "support", "images", "wall", "wall")
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
