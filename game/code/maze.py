@@ -15,8 +15,7 @@ class LevelMaze:
         self.world_height = world_height
         self.world_width = world_width
 
-        (self.obstacles,)
-        self.hit_obstacles = self.generate_maze(seed=seed)
+        self.obstacles, self.hit_obstacles = self.generate_maze(seed=seed)
         self.increase_score = increase_score
         self.coin = self.generate_coin()
         self.coin.generate(False)
