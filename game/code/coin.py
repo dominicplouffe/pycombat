@@ -8,7 +8,6 @@ class Coin(pygame.sprite.Sprite):
         self,
         size: int,
         obstacles: pygame.sprite.Group,
-        increase_score: callable,
         grid: list[list[int]] = None,
     ) -> None:
         super().__init__()
@@ -18,7 +17,6 @@ class Coin(pygame.sprite.Sprite):
 
         self.size = size
         self.obstacles = obstacles
-        self.increase_score = increase_score
         self.grid_col = 0
         self.grid_row = 0
         self.grid = grid
@@ -38,7 +36,8 @@ class Coin(pygame.sprite.Sprite):
                 self.rect.y = rrow * OBJ_HEIGHT + (OBJ_HEIGHT // 2 - self.size // 2)
 
         if hit:
-            self.increase_score(is_enemy)
+            # Do something in the future, like play a soune
+            pass
 
     def __str__(self) -> str:
         return f"Coin => Col: {self.grid_col} Row: {self.grid_row}"

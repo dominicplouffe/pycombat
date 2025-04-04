@@ -7,16 +7,13 @@ from coin import Coin
 
 
 class LevelMaze:
-    def __init__(
-        self, increase_score, world_width=18, world_height=10, seed=10
-    ) -> None:
+    def __init__(self, world_width=18, world_height=10, seed=10) -> None:
         self.grid = []
         self.hit_grid = []
         self.world_height = world_height
         self.world_width = world_width
 
         self.obstacles, self.hit_obstacles = self.generate_maze(seed=seed)
-        self.increase_score = increase_score
 
         self.coin = self.generate_coin()
         self.coin.generate(False)
@@ -81,7 +78,7 @@ class LevelMaze:
         return False
 
     def generate_coin(self) -> Coin:
-        return Coin(50, self.obstacles, self.increase_score, self.grid)
+        return Coin(50, self.obstacles, self.grid)
 
     def collide_coin(self, collider: pygame.sprite.Sprite) -> bool:
         if pygame.sprite.collide_rect(collider, self.coin):

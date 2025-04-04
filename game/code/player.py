@@ -19,6 +19,7 @@ class Player(pygame.sprite.Sprite):
         start_pos: vector = vector(75, 75),
         bullets: pygame.sprite.Group = pygame.sprite.Group(),
         all_sprites: pygame.sprite.Group = pygame.sprite.Group(),
+        collect_coin_callback: callable = None,
     ) -> None:
         super().__init__(groups)
 
@@ -37,6 +38,7 @@ class Player(pygame.sprite.Sprite):
         self.bullets = bullets
         self.all_sprites = all_sprites
         self.bullet_pressed = False
+        self.collect_coin_callback = collect_coin_callback
 
         self.hit_rect = RectSprite(
             BLACK, self.rect.width - 10, self.rect.height - 10, 0, 0
@@ -144,9 +146,8 @@ class Player(pygame.sprite.Sprite):
         else:
             self.calculate_grid_position()
 
-        if self.maze.collide_coin(self):
-            self.maze.coin.generate(True)
-            self.compute_path()
+        if self.maze.collide_coin(self) and self.collect_coin_callback:
+            self.collect_coin_callback(self.is_computer)
 
     def stop_bullet(self) -> None:
         self.bullet_pressed = False
@@ -209,7 +210,10 @@ class Player(pygame.sprite.Sprite):
             self.rect.bottomright[0], self.rect.bottomright[1]
         )
 
-    def compute_path(self):
+    def compute_path(self) -> None:
+        if not self.is_computer:
+            return []
+
         self.path = find_path(
             self.maze.grid,
             (self.topleft_grid_row, self.topleft_grid_col),

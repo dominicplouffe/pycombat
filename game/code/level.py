@@ -25,7 +25,7 @@ class Level:
         self,
     ) -> None:
         self.player_score = 0
-        self.maze = LevelMaze(self.increase_score)
+        self.maze = LevelMaze()
 
         self.display_surface = pygame.display.get_surface()
         self.world = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
@@ -40,6 +40,7 @@ class Level:
             is_computer=False,
             bullets=self.bullets,
             all_sprites=self.all_sprites,
+            collect_coin_callback=self.collect_coin,
         )
         self.enemy = Player(
             self.all_sprites,
@@ -47,6 +48,7 @@ class Level:
             is_computer=True,
             bullets=self.bullets,
             all_sprites=self.all_sprites,
+            collect_coin_callback=self.collect_coin,
         )
 
         self.dt_sum = 0
@@ -165,12 +167,6 @@ class Level:
         )
         self.display_surface.blit(distance_text, distance_rect)
 
-    def increase_score(self, is_enemy) -> None:
-        if not is_enemy:
-            self.player_score += 1
-        else:
-            self.enemy_score += 1
-
     def calculate_angle(self, x1, y1, x2, y2) -> float:
         # Calculate the difference in coordinates
         delta_x = x2 - x1
@@ -231,3 +227,10 @@ class Level:
 
         pygame.draw.line(self.display_surface, RED, (x_end, y_end), left_wing, 3)
         pygame.draw.line(self.display_surface, RED, (x_end, y_end), right_wing, 3)
+
+    def collect_coin(self, is_computer: bool) -> None:
+        self.maze.coin.generate(True)
+        self.enemy.compute_path()
+
+        if not is_computer:
+            self.player_score += 1
