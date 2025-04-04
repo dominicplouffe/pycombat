@@ -37,7 +37,14 @@ class Level:
         self.player = Player(
             self.all_sprites,
             self.maze,
-            is_enemy=False,
+            is_computer=False,
+            bullets=self.bullets,
+            all_sprites=self.all_sprites,
+        )
+        self.enemy = Player(
+            self.all_sprites,
+            self.maze,
+            is_computer=True,
             bullets=self.bullets,
             all_sprites=self.all_sprites,
         )
@@ -51,6 +58,7 @@ class Level:
             self.maze.coin,
             self.bullets,
             self.player,
+            self.enemy,
         )
 
         self.world.fill(DARK_GREEN)

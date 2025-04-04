@@ -1,12 +1,15 @@
 import pygame
 import random
-from config import GOLD, WORLD_WIDTH, WORLD_HEIGHT
-from support import check_overlap
+from config import GOLD, OBJ_WIDTH, OBJ_HEIGHT
 
 
 class Coin(pygame.sprite.Sprite):
     def __init__(
-        self, size: int, obstacles: pygame.sprite.Group, increase_score: callable
+        self,
+        size: int,
+        obstacles: pygame.sprite.Group,
+        increase_score: callable,
+        grid: list[list[int]] = None,
     ) -> None:
         super().__init__()
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
@@ -16,18 +19,26 @@ class Coin(pygame.sprite.Sprite):
         self.size = size
         self.obstacles = obstacles
         self.increase_score = increase_score
+        self.grid_col = 0
+        self.grid_row = 0
+        self.grid = grid
 
     def generate(self, hit, is_enemy=False) -> None:
         valid_coin = False
 
         while not valid_coin:
-            self.rect.x = random.randint(0, WORLD_WIDTH - self.size) + (self.size // 4)
-            self.rect.y = random.randint(0, WORLD_HEIGHT - self.size) + (
-                self.size // 4
-            )
+            rrow = random.randrange(0, len(self.grid))
+            rcol = random.randrange(0, len(self.grid[rrow]))
 
-            if not check_overlap(self, self.obstacles):
+            if self.grid[rrow][rcol] == 0:
                 valid_coin = True
+                self.grid_col = rcol
+                self.grid_row = rrow
+                self.rect.x = rcol * OBJ_WIDTH + (OBJ_WIDTH // 2 - self.size // 2)
+                self.rect.y = rrow * OBJ_HEIGHT + (OBJ_HEIGHT // 2 - self.size // 2)
 
         if hit:
             self.increase_score(is_enemy)
+
+    def __str__(self) -> str:
+        return f"Coin => Col: {self.grid_col} Row: {self.grid_row}"

@@ -1,6 +1,7 @@
 import pygame
 from os import walk
 from os.path import join
+from config import OBJ_WIDTH, OBJ_HEIGHT
 
 
 def import_image(*path, alpha=True, format="png") -> pygame.Surface:
@@ -41,7 +42,6 @@ def import_sub_folders(*path) -> dict:
 
 
 def check_overlap(new_square, group, inflate=False) -> bool:
-
     if inflate:
         test_rect = new_square.rect.inflate(100, 100)
     else:
@@ -51,6 +51,16 @@ def check_overlap(new_square, group, inflate=False) -> bool:
         if test_rect.colliderect(sprite.rect):
             return True
     return False
+
+
+def find_x_y_in_grid(
+    rect_x: int,
+    rect_y: int,
+) -> tuple[int, int]:
+    x = int(rect_x / OBJ_WIDTH)
+    y = int(rect_y / OBJ_HEIGHT)
+
+    return (x, y)
 
 
 # NOT USED:

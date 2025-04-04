@@ -1,6 +1,6 @@
 import pygame
-from config import OBJ_WIDTH, OBJ_HEIGHT, SAND
-from sprite import RectSprite
+from config import OBJ_WIDTH, OBJ_HEIGHT, SAND, BLACK
+from sprite import RoundedSprite as RectSprite
 from mazelib.generate.Prims import Prims
 from mazelib import Maze
 from coin import Coin
@@ -17,6 +17,7 @@ class LevelMaze:
 
         self.obstacles, self.hit_obstacles = self.generate_maze(seed=seed)
         self.increase_score = increase_score
+
         self.coin = self.generate_coin()
         self.coin.generate(False)
 
@@ -39,9 +40,16 @@ class LevelMaze:
             for x, cell in enumerate(row):
                 if cell == 1:
                     pos_x, pos_y = x * OBJ_WIDTH, y * OBJ_HEIGHT
-                    obj_rect = RectSprite(SAND, OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y)
+                    obj_rect = RectSprite(
+                        SAND, BLACK, OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y
+                    )
                     obj_hit = RectSprite(
-                        SAND, OBJ_WIDTH - 10, OBJ_HEIGHT - 10, pos_x + 5, pos_y + 5
+                        SAND,
+                        BLACK,
+                        OBJ_WIDTH - 10,
+                        OBJ_HEIGHT - 10,
+                        pos_x + 5,
+                        pos_y + 5,
                     )
                     obstacles.add(obj_rect)
                     hit_obstacles.add(obj_hit)
@@ -73,7 +81,7 @@ class LevelMaze:
         return False
 
     def generate_coin(self) -> Coin:
-        return Coin(50, self.obstacles, self.increase_score)
+        return Coin(50, self.obstacles, self.increase_score, self.grid)
 
     def collide_coin(self, collider: pygame.sprite.Sprite) -> bool:
         if pygame.sprite.collide_rect(collider, self.coin):

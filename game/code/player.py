@@ -1,14 +1,13 @@
 import pygame
 from pygame import Vector2 as vector
-from support import import_folder_dict
+from support import import_folder_dict, find_x_y_in_grid
 from copy import deepcopy
 from config import ANIMATION_SPEED, BLACK
-from config import WINDOW_WIDTH, WINDOW_HEIGHT
-from sprite import CollideSprite, RectSprite
-import random
+from sprite import RectSprite
 from bullet import Bullet
 from maze import LevelMaze
 from game_timer import Timer
+from ai import find_path, find_direction
 
 
 class Player(pygame.sprite.Sprite):
@@ -16,8 +15,7 @@ class Player(pygame.sprite.Sprite):
         self,
         groups: pygame.sprite.Group,
         maze: LevelMaze,
-        is_enemy: bool = True,
-        is_networked: bool = False,
+        is_computer: bool = True,
         start_pos: vector = vector(75, 75),
         bullets: pygame.sprite.Group = pygame.sprite.Group(),
         all_sprites: pygame.sprite.Group = pygame.sprite.Group(),
@@ -31,29 +29,40 @@ class Player(pygame.sprite.Sprite):
         self.maze = maze
         self.rect = self.image.get_frect(topleft=(start_pos))
         self.direction = vector(0, 0)
-        self.speed = 350 if not is_enemy else 200
+        self.speed = 350 if not is_computer else 200
         self.gun_pos = vector(1, 0)
-        self.is_enemy = is_enemy
+        self.is_computer = is_computer
         self.previous_direction = vector()
         self.collide_dir = None
-        self.is_networked = is_networked
         self.bullets = bullets
         self.all_sprites = all_sprites
         self.bullet_pressed = False
-
-        self.view_x = 0
-        self.view_y = 0
-        self.bullet_timer = Timer(2000)
-        self.bullet_timer.activate()
 
         self.hit_rect = RectSprite(
             BLACK, self.rect.width - 10, self.rect.height - 10, 0, 0
         )
         self.hit_rect.rect.center = self.rect.center
 
+        self.view_x = 0
+        self.view_y = 0
+
+        self.topleft_grid_col = None
+        self.topleft_grid_row = None
+        self.bottomright_grid_col = None
+        self.bottomright_grid_row = None
+        self.grid_to_use = "topleft"
+        self.calculate_grid_position()
+
+        self.bullet_timer = Timer(2000)
+        self.bullet_timer.activate()
+
+        self.path = []
+        self.path_index = 0
+        self.compute_path()
+
     def update(self, dt: float, event) -> None:
         self.animate(dt)
-        if not self.is_enemy:
+        if not self.is_computer:
             self.direction = self.input(dt, event)
         else:
             self.direction = self.choose_enemy_move()
@@ -61,9 +70,7 @@ class Player(pygame.sprite.Sprite):
 
         self.bullet_timer.update()
 
-    def input(self, dt, event) -> None:
-        if self.is_networked:
-            return vector(0, 0)
+    def input(self, dt, event) -> vector:
         input_vector = vector(0, 0)
 
         keys = pygame.key.get_pressed()
@@ -129,8 +136,17 @@ class Player(pygame.sprite.Sprite):
             if abs(self.direction.y) > 0:
                 self.view_y = self.view_y - self.direction.y
 
+            if self.is_computer:
+                if self.grid_to_use == "topleft":
+                    self.grid_to_use = "bottomright"
+                else:
+                    self.grid_to_use = "topleft"
+        else:
+            self.calculate_grid_position()
+
         if self.maze.collide_coin(self):
-            self.maze.coin.generate(True, is_enemy=self.is_enemy or self.is_networked)
+            self.maze.coin.generate(True)
+            self.compute_path()
 
     def stop_bullet(self) -> None:
         self.bullet_pressed = False
@@ -149,89 +165,54 @@ class Player(pygame.sprite.Sprite):
         self.gun_pos = v
 
     def choose_enemy_move(self) -> None:
-        new_rect = CollideSprite(self.rect.copy())
-        if self.collide_dir:
-            if self.collide_dir == "x":
-                new_rect.rect.x += 1
-                new_rect.rect.y += self.previous_direction[1]
-                if self.collision(new_rect):
-                    return vector(0, self.previous_direction[1] * 1.1)
-                self.collide_dir = None
-                return vector(1, self.previous_direction[1])
-            elif self.collide_dir == "-x":
-                new_rect.rect.x -= 1
-                new_rect.rect.y += self.previous_direction[1]
-                if self.collision(new_rect):
-                    return vector(0, self.previous_direction[1] * 1.1)
-                self.collide_dir = None
-                return vector(-1, self.previous_direction[1])
-            elif self.collide_dir == "y":
-                new_rect.rect.x += self.previous_direction[0]
-                new_rect.rect.y += 1
-                if self.collision(new_rect):
-                    return vector(self.previous_direction[0] * 1.1, 0)
-                self.collide_dir = None
-                return vector(self.previous_direction[0], 1)
-            elif self.collide_dir == "-y":
-                new_rect.rect.x += self.previous_direction[0]
-                new_rect.rect.y -= 1
-                if self.collision(new_rect):
-                    return vector(self.previous_direction[0] * 1.1, 0)
-                self.collide_dir = None
-                return vector(self.previous_direction[0], -1)
+        idx = self.path_index  # + 1
 
-        self.collide_dir = None
+        if idx >= len(self.path):
+            self.compute_path()
+            return vector(0, 0)
 
-        move_x, move_y = 0, 0
-        if new_rect.rect.x < self.maze.coin.rect.x:
-            move_x = 1
-        elif new_rect.rect.x > self.maze.coin.rect.x:
-            move_x = -1
-        if new_rect.rect.y < self.maze.coin.rect.y:
-            move_y = 1
-        elif new_rect.rect.y > self.maze.coin.rect.y:
-            move_y = -1
+        target_row, target_col = self.path[idx][0], self.path[idx][1]
 
-        new_rect.rect.x += move_x
-        if self.collision(new_rect):
-            if move_x < 0:
-                self.collide_dir = "-x"
-            else:
-                self.collide_dir = "x"
-            new_rect.rect.x -= move_x
-            move_x = 0
+        if target_col == self.topleft_grid_col and target_row == self.topleft_grid_row:
+            if (
+                target_col == self.bottomright_grid_col
+                and target_row == self.bottomright_grid_row
+            ):
+                self.path_index += 1
 
-        new_rect.rect.y += move_y
-        if self.collision(new_rect):
-            if move_y < 0:
-                self.collide_dir = "-y"
-            else:
-                self.collide_dir = "y"
-            new_rect.rect.y -= move_y
-            move_y = 0
+                return vector(0, 0)
 
-        if move_x == 0 and move_y == 0:
-            move_x, move_y = random.choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
-            new_rect.rect.x += move_x
-            new_rect.rect.y += move_y
+        top_direction = find_direction(
+            self.topleft_grid_col, self.topleft_grid_row, target_col, target_row
+        )
+        bottom_direction = find_direction(
+            self.bottomright_grid_col, self.bottomright_grid_row, target_col, target_row
+        )
 
-        if self.collision(new_rect):
-            move_x = 0
-            move_y = 0
+        if top_direction.x == 0 and top_direction.y == 0:
+            if bottom_direction.x != 0 or bottom_direction.y != 0:
+                self.grid_to_use = "bottomright"
+        elif bottom_direction.x == 0 and bottom_direction.y == 0:
+            if top_direction.x != 0 or top_direction.y != 0:
+                self.grid_to_use = "topleft"
 
-        direction = vector(move_x, move_y)
-        if self.collide_dir:
-            self.previous_direction = direction.copy()
+        if self.grid_to_use == "topleft":
+            return top_direction
 
-        return direction
+        return bottom_direction
 
-    def collision(self, collider: pygame.sprite.Sprite) -> bool:
-        if collider.rect.left < 0 or collider.rect.right > WINDOW_WIDTH:
-            return "border"
-        if collider.rect.top < 0 or collider.rect.bottom > WINDOW_HEIGHT:
-            return "border"
+    def calculate_grid_position(self) -> None:
+        self.topleft_grid_col, self.topleft_grid_row = find_x_y_in_grid(
+            self.rect.topleft[0], self.rect.topleft[1]
+        )
+        self.bottomright_grid_col, self.bottomright_grid_row = find_x_y_in_grid(
+            self.rect.bottomright[0], self.rect.bottomright[1]
+        )
 
-        for obstacle in self.obstacles:
-            if pygame.sprite.collide_rect(collider, obstacle):
-                return "object"
-        return None
+    def compute_path(self):
+        self.path = find_path(
+            self.maze.grid,
+            (self.topleft_grid_row, self.topleft_grid_col),
+            (self.maze.coin.grid_row, self.maze.coin.grid_col),
+        )
+        self.path_index = 0
