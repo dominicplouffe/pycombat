@@ -1,6 +1,6 @@
 import pygame
 import random
-from config import WINDOW_WIDTH, WINDOW_HEIGHT, GOLD, WORLD_WIDTH, WORLD_HEIGHT
+from config import GOLD, WORLD_WIDTH, WORLD_HEIGHT
 from support import check_overlap
 
 

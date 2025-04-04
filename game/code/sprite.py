@@ -1,5 +1,4 @@
 import pygame
-from wall import Wall
 
 
 class RectSprite(pygame.sprite.Sprite):
