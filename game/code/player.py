@@ -15,11 +15,12 @@ class Player(pygame.sprite.Sprite):
         self,
         groups: pygame.sprite.Group,
         maze: LevelMaze,
-        is_computer: bool = True,
+        is_bot: bool = True,
         start_pos: vector = vector(75, 75),
         bullets: pygame.sprite.Group = pygame.sprite.Group(),
         all_sprites: pygame.sprite.Group = pygame.sprite.Group(),
         collect_coin_callback: callable = None,
+        speed: int = 350,
     ) -> None:
         super().__init__(groups)
 
@@ -30,15 +31,16 @@ class Player(pygame.sprite.Sprite):
         self.maze = maze
         self.rect = self.image.get_frect(topleft=(start_pos))
         self.direction = vector(0, 0)
-        self.speed = 350 if not is_computer else 200
+        self.speed = speed
         self.gun_pos = vector(1, 0)
-        self.is_computer = is_computer
+        self.is_bot = is_bot
         self.previous_direction = vector()
         self.collide_dir = None
         self.bullets = bullets
         self.all_sprites = all_sprites
         self.bullet_pressed = False
         self.collect_coin_callback = collect_coin_callback
+        self.score = 0
 
         self.hit_rect = RectSprite(
             BLACK, self.rect.width - 10, self.rect.height - 10, 0, 0
@@ -64,13 +66,19 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, dt: float, event) -> None:
         self.animate(dt)
-        if not self.is_computer:
+        if not self.is_bot:
             self.direction = self.input(dt, event)
         else:
             self.direction = self.choose_enemy_move()
         self.move(dt)
 
         self.bullet_timer.update()
+
+    def set_speed(self, speed: int) -> None:
+        self.speed = speed
+
+    def increment_score(self) -> None:
+        self.score += 1
 
     def input(self, dt, event) -> vector:
         input_vector = vector(0, 0)
@@ -138,7 +146,7 @@ class Player(pygame.sprite.Sprite):
             if abs(self.direction.y) > 0:
                 self.view_y = self.view_y - self.direction.y
 
-            if self.is_computer:
+            if self.is_bot:
                 if self.grid_to_use == "topleft":
                     self.grid_to_use = "bottomright"
                 else:
@@ -147,7 +155,7 @@ class Player(pygame.sprite.Sprite):
             self.calculate_grid_position()
 
         if self.maze.collide_coin(self) and self.collect_coin_callback:
-            self.collect_coin_callback(self.is_computer)
+            self.collect_coin_callback(self.is_bot)
 
     def stop_bullet(self) -> None:
         self.bullet_pressed = False
@@ -166,7 +174,7 @@ class Player(pygame.sprite.Sprite):
         self.gun_pos = v
 
     def choose_enemy_move(self) -> None:
-        idx = self.path_index  # + 1
+        idx = self.path_index
 
         if idx >= len(self.path):
             self.compute_path()
@@ -197,10 +205,20 @@ class Player(pygame.sprite.Sprite):
             if top_direction.x != 0 or top_direction.y != 0:
                 self.grid_to_use = "topleft"
 
+        direction = bottom_direction
         if self.grid_to_use == "topleft":
-            return top_direction
+            direction = top_direction
 
-        return bottom_direction
+        if direction.x == 1:
+            self.change_gun_direction(vector(1, 0))
+        elif direction.x == -1:
+            self.change_gun_direction(vector(-1, 0))
+        elif direction.y == 1:
+            self.change_gun_direction(vector(0, 1))
+        elif direction.y == -1:
+            self.change_gun_direction(vector(0, -1))
+
+        return direction
 
     def calculate_grid_position(self) -> None:
         self.topleft_grid_col, self.topleft_grid_row = find_x_y_in_grid(
@@ -211,7 +229,7 @@ class Player(pygame.sprite.Sprite):
         )
 
     def compute_path(self) -> None:
-        if not self.is_computer:
+        if not self.is_bot:
             return []
 
         self.path = find_path(
