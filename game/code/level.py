@@ -11,45 +11,47 @@ from config import (
     RED,
     WHITE,
     BLACK,
+    MOSS_GREEN,
+    BOT_DIFFICULTY,
+    RANKS,
 )
 
 from player import Player
 from maze import LevelMaze
-
-
-BOT_DIFFICULTY = {
-    1: 170,
-    2: 200,
-    3: 230,
-    4: 260,
-    5: 290,
-    6: 320,
-    7: 350,
-    8: 380,
-    9: 410,
-    10: 440,
-}
+from sprite import RectSprite
+from player_stats import PlayerStats
+from power_ups import PowerUpChoices
 
 
 class Level:
     def __init__(
         self,
         display_level_done: callable,
+        player_stats: PlayerStats,
         level_number: int = 1,
+        seed: int = 0,
     ) -> None:
-        self.maze = LevelMaze()
+        self.maze = LevelMaze(seed=seed)
         self.level_number = level_number
+        self.seed = seed
 
         self.display_surface = pygame.display.get_surface()
         self.world = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
         self.bullets = pygame.sprite.Group()
+        self.path = pygame.sprite.Group()
+        self.player_stats = player_stats
 
         self.all_sprites = pygame.sprite.Group(
-            *self.maze.obstacles, self.maze.hit_obstacles, self.maze.coin, self.bullets
+            *self.maze.obstacles,
+            self.maze.hit_obstacles,
+            self.maze.coin,
+            self.bullets,
+            self.path,
         )
         self.player = Player(
             self.all_sprites,
             self.maze,
+            player_stats,
             is_bot=False,
             bullets=self.bullets,
             all_sprites=self.all_sprites,
@@ -58,6 +60,7 @@ class Level:
         self.bot = Player(
             self.all_sprites,
             self.maze,
+            player_stats,
             is_bot=True,
             bullets=self.bullets,
             all_sprites=self.all_sprites,
@@ -65,13 +68,27 @@ class Level:
             speed=BOT_DIFFICULTY[level_number],
         )
 
+        self.draw_path()
         self.dt_sum = 0
         self.display_level_done = display_level_done
 
     def update(self, dt, event) -> None:
+        if self.has_path_power_up() and len(self.path) == 0:
+            self.player.compute_path()
+            self.draw_path()
+
+        if not self.has_path_power_up() and len(self.path) > 0:
+            self.path = []
+
+        if self.has_ice_power_up():
+            self.bot.set_speed(BOT_DIFFICULTY[1])
+        else:
+            self.bot.set_speed(BOT_DIFFICULTY[self.level_number])
+
         self.all_sprites = pygame.sprite.Group(
             *self.maze.hit_obstacles,
             self.maze.obstacles,
+            self.path,
             self.maze.coin,
             self.bullets,
             self.player,
@@ -112,31 +129,39 @@ class Level:
     def draw_ui(self) -> None:
         font = pygame.font.Font(None, 36)
 
-        # Score Text
-        score_text = font.render(
-            f"Score: {self.player.score} - Bot: {self.bot.score}", True, BLACK
+        # Coins Text
+        coins_text = font.render(
+            f"Coins: {self.player.coins} - Bot: {self.bot.coins}", True, BLACK
         )
-        score_rect = score_text.get_rect()
-        score_rect.topleft = (10, 13)
+        coins_rect = coins_text.get_rect()
+        coins_rect.topleft = (10, 13)
 
-        distance_text = font.render(f"Level: {self.level_number:.0f}", True, BLACK)
-        distance_rect = distance_text.get_rect()
-        distance_rect.topleft = (220, 13)
+        level_text = font.render(f"Level: {self.level_number:.0f}", True, BLACK)
+        level_rect = level_text.get_rect()
+        level_rect.topleft = (220, 13)
+
+        seed_text = font.render(f"Seed: {self.seed}", True, BLACK)
+        seed_rect = seed_text.get_rect()
+        seed_rect.topleft = (340, 13)
+
+        rank_text = font.render(f"Rank: {RANKS[self.level_number]}", True, BLACK)
+        rank_rect = rank_text.get_rect()
+        rank_rect.topleft = (500, 13)
 
         # Draw background boxes with blue borders
         padding = 8
         box_color = WHITE
         border_color = BLACK
 
-        # Draw the box for the score
+        # Draw the box for the coins
         pygame.draw.rect(
             self.display_surface,
             border_color,
             (
-                score_rect.x - padding,
-                score_rect.y - padding,
-                score_rect.width + 2 * padding,
-                score_rect.height + 2 * padding,
+                coins_rect.x - padding,
+                coins_rect.y - padding,
+                coins_rect.width + 2 * padding,
+                coins_rect.height + 2 * padding,
             ),
             2,  # Border thickness
         )
@@ -144,23 +169,22 @@ class Level:
             self.display_surface,
             box_color,
             (
-                score_rect.x - padding + 2,
-                score_rect.y - padding + 2,
-                score_rect.width + 2 * (padding - 2),
-                score_rect.height + 2 * (padding - 2),
+                coins_rect.x - padding + 2,
+                coins_rect.y - padding + 2,
+                coins_rect.width + 2 * (padding - 2),
+                coins_rect.height + 2 * (padding - 2),
             ),
         )
-        self.display_surface.blit(score_text, score_rect)
+        self.display_surface.blit(coins_text, coins_rect)
 
-        # Draw the box for the distance
         pygame.draw.rect(
             self.display_surface,
             border_color,
             (
-                distance_rect.x - padding,
-                distance_rect.y - padding,
-                distance_rect.width + 2 * padding,
-                distance_rect.height + 2 * padding,
+                level_rect.x - padding,
+                level_rect.y - padding,
+                level_rect.width + 2 * padding,
+                level_rect.height + 2 * padding,
             ),
             2,  # Border thickness
         )
@@ -168,13 +192,59 @@ class Level:
             self.display_surface,
             box_color,
             (
-                distance_rect.x - padding + 2,
-                distance_rect.y - padding + 2,
-                distance_rect.width + 2 * (padding - 2),
-                distance_rect.height + 2 * (padding - 2),
+                level_rect.x - padding + 2,
+                level_rect.y - padding + 2,
+                level_rect.width + 2 * (padding - 2),
+                level_rect.height + 2 * (padding - 2),
             ),
         )
-        self.display_surface.blit(distance_text, distance_rect)
+        self.display_surface.blit(level_text, level_rect)
+
+        pygame.draw.rect(
+            self.display_surface,
+            border_color,
+            (
+                rank_rect.x - padding,
+                rank_rect.y - padding,
+                rank_rect.width + 2 * padding,
+                rank_rect.height + 2 * padding,
+            ),
+            2,  # Border thickness
+        )
+        pygame.draw.rect(
+            self.display_surface,
+            box_color,
+            (
+                rank_rect.x - padding + 2,
+                rank_rect.y - padding + 2,
+                rank_rect.width + 2 * (padding - 2),
+                rank_rect.height + 2 * (padding - 2),
+            ),
+        )
+        self.display_surface.blit(rank_text, rank_rect)
+
+        pygame.draw.rect(
+            self.display_surface,
+            border_color,
+            (
+                seed_rect.x - padding,
+                seed_rect.y - padding,
+                seed_rect.width + 2 * padding,
+                seed_rect.height + 2 * padding,
+            ),
+            2,  # Border thickness
+        )
+        pygame.draw.rect(
+            self.display_surface,
+            box_color,
+            (
+                seed_rect.x - padding + 2,
+                seed_rect.y - padding + 2,
+                seed_rect.width + 2 * (padding - 2),
+                seed_rect.height + 2 * (padding - 2),
+            ),
+        )
+        self.display_surface.blit(seed_text, seed_rect)
 
     def calculate_angle(self, x1, y1, x2, y2) -> float:
         # Calculate the difference in coordinates
@@ -236,15 +306,54 @@ class Level:
 
     def collect_coin(self, is_bot: bool) -> None:
         self.maze.coin.generate(True)
+
+        self.player.compute_path()
+        self.draw_path()
+
         if self.bot:
             self.bot.compute_path()
 
         if not is_bot:
-            self.player.increment_score()
+            self.player_stats.add_coins(1)
+            self.player.increment_coins()
         else:
-            self.bot.increment_score()
+            self.bot.increment_coins()
 
-        if self.player.score >= 5:
+        if self.player.coins >= 5:
             self.display_level_done(True)
-        elif self.bot.score >= 5:
+        elif self.bot.coins >= 5:
             self.display_level_done(False)
+
+    def draw_path(self) -> None:
+        self.path = pygame.sprite.Group()
+        if not self.has_path_power_up():
+            return
+
+        for row, col in self.player.path:
+            pos_x, pos_y = col * OBJ_WIDTH, row * OBJ_HEIGHT
+
+            path_rect = RectSprite(
+                MOSS_GREEN,
+                OBJ_WIDTH // 4,
+                OBJ_HEIGHT // 4,
+                pos_x + (OBJ_WIDTH // 2 - OBJ_WIDTH // 8),
+                pos_y + (OBJ_HEIGHT // 2 - OBJ_HEIGHT // 8),
+            )
+            # check if path_rect collides with self.maze.obstacles
+            for obstacle in self.maze.obstacles:
+                if path_rect.rect.colliderect(obstacle.rect):
+                    path_rect.kill()
+                    break
+            else:
+                # If no collision, add the path_rect to the path_group
+                self.path.add(path_rect)
+
+    def has_path_power_up(self) -> bool:
+        return self.player_stats.power_ups.has_power_up(
+            PowerUpChoices.PATH
+        ) or self.player_stats.power_ups.has_power_up(PowerUpChoices.PATH_PLUS)
+
+    def has_ice_power_up(self) -> bool:
+        return self.player_stats.power_ups.has_power_up(
+            PowerUpChoices.ICE
+        ) or self.player_stats.power_ups.has_power_up(PowerUpChoices.ICE_PLUS)

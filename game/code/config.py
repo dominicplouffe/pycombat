@@ -16,6 +16,34 @@ GOLD = (255, 223, 0)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 SAND = (237, 201, 175)
+BEIGE = (255, 245, 220)
+MOSS_GREEN = (126, 140, 84)
 
 OBJ_WIDTH = 70
 OBJ_HEIGHT = 70
+
+BOT_DIFFICULTY = {
+    1: 170,
+    2: 200,
+    3: 230,
+    4: 260,
+    5: 290,
+    6: 320,
+    7: 350,
+    8: 380,
+    9: 410,
+    10: 440,
+}
+
+RANKS = {
+    1: "Private",
+    2: "Private First Class",
+    3: "Specialist",
+    4: "Sergeant",
+    5: "Staff Sergeant",
+    6: "Sergeant First Class",
+    7: "Second Lieutenant",
+    8: "Captain",
+    9: "Lieutenant Colonel",
+    10: "General",
+}

@@ -8,6 +8,8 @@ from bullet import Bullet
 from maze import LevelMaze
 from game_timer import Timer
 from ai import find_path, find_direction
+from player_stats import PlayerStats
+from power_ups import PowerUpChoices
 
 
 class Player(pygame.sprite.Sprite):
@@ -15,6 +17,7 @@ class Player(pygame.sprite.Sprite):
         self,
         groups: pygame.sprite.Group,
         maze: LevelMaze,
+        player_stats: PlayerStats,
         is_bot: bool = True,
         start_pos: vector = vector(75, 75),
         bullets: pygame.sprite.Group = pygame.sprite.Group(),
@@ -40,7 +43,8 @@ class Player(pygame.sprite.Sprite):
         self.all_sprites = all_sprites
         self.bullet_pressed = False
         self.collect_coin_callback = collect_coin_callback
-        self.score = 0
+        self.coins = 0
+        self.player_stats = player_stats
 
         self.hit_rect = RectSprite(
             BLACK, self.rect.width - 10, self.rect.height - 10, 0, 0
@@ -69,7 +73,7 @@ class Player(pygame.sprite.Sprite):
         if not self.is_bot:
             self.direction = self.input(dt, event)
         else:
-            self.direction = self.choose_enemy_move()
+            self.direction = self.choose_bot_move()
         self.move(dt)
 
         self.bullet_timer.update()
@@ -77,8 +81,8 @@ class Player(pygame.sprite.Sprite):
     def set_speed(self, speed: int) -> None:
         self.speed = speed
 
-    def increment_score(self) -> None:
-        self.score += 1
+    def increment_coins(self) -> None:
+        self.coins += 1
 
     def input(self, dt, event) -> vector:
         input_vector = vector(0, 0)
@@ -106,7 +110,24 @@ class Player(pygame.sprite.Sprite):
             if self.gun_pos.y != 1:
                 self.change_gun_direction(vector(0, 1))
 
-        if keys[pygame.K_SPACE]:
+        if keys[pygame.K_1]:
+            self.player_stats.power_ups.add_path_power_up()
+
+        if keys[pygame.K_2]:
+            self.player_stats.power_ups.add_path_plus_power_up()
+
+        if keys[pygame.K_3]:
+            self.player_stats.power_ups.add_bullet_power_up()
+
+        if keys[pygame.K_4]:
+            self.player_stats.power_ups.add_ice_power_up()
+
+        if keys[pygame.K_5]:
+            self.player_stats.power_ups.add_ice_plus_power_up()
+
+        if keys[pygame.K_SPACE] and self.player_stats.power_ups.has_power_up(
+            PowerUpChoices.BULLET
+        ):
             if not self.bullet_timer.active and not self.bullet_pressed:
                 self.bullet_pressed = True
                 self.bullet_timer.activate()
@@ -173,7 +194,7 @@ class Player(pygame.sprite.Sprite):
 
         self.gun_pos = v
 
-    def choose_enemy_move(self) -> None:
+    def choose_bot_move(self) -> None:
         idx = self.path_index
 
         if idx >= len(self.path):
@@ -229,9 +250,6 @@ class Player(pygame.sprite.Sprite):
         )
 
     def compute_path(self) -> None:
-        if not self.is_bot:
-            return []
-
         self.path = find_path(
             self.maze.grid,
             (self.topleft_grid_row, self.topleft_grid_col),
