@@ -1,117 +1,147 @@
 import pygame
 import time
-from config import WHITE, BLACK, WINDOW_WIDTH, WINDOW_HEIGHT
+import hashlib
+from config import (
+    WHITE,
+    BLACK,
+    MOSS_GREEN,
+    SAND,
+    DARK_GREEN,
+    BEIGE,
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+)
+from controls.button import Button
+from controls.textbox import TextBox
 
 
 class Title:
-    def __init__(self, start_game: callable, set_seed: callable) -> None:
+    def __init__(
+        self, start_game: callable, set_seed: callable, set_game_mode: callable
+    ) -> None:
         self.display_surface = pygame.display.get_surface()
-        self.btn_random = None
-        self.btn_seed = None
-        self.button_handled = False
         self.title_state = "main_menu"
-
-        # Text box for seed input
-        self.active = False
-        self.input_text = ""
-        self.text_box_rect = None
-        self.last_input_time = 0  # For debouncing TEXTINPUT events
-
+        self.input_text = "Custom Seed"
         self.start_game = start_game
         self.set_seed = set_seed
+        self.set_game_mode = set_game_mode
 
-    def run(self):
-        self.display_surface.fill(BLACK)
+        self.setup_ui()
+
+    def setup_ui(self) -> None:
+        self.display_surface.fill(MOSS_GREEN)
         title_font = pygame.font.Font(None, 80)  # Larger font for title
-        button_font = pygame.font.Font(None, 50)
-
-        # Title Text (centered at top)
-        title_surface = title_font.render("PyCombat", True, WHITE)
+        title_surface = title_font.render("PyCombat", True, SAND)
         title_rect = title_surface.get_rect(
             center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4)
         )
         self.display_surface.blit(title_surface, title_rect)
 
-        # Button properties
-        button_color = WHITE
         button_width, button_height = 300, 70
-
-        # Random Game Button (Centered)
-        self.btn_random = pygame.Rect(
-            (WINDOW_WIDTH - button_width) // 2,
-            (WINDOW_HEIGHT // 2) - 50,
-            button_width,
-            button_height,
+        left_center_x = WINDOW_WIDTH // 2
+        right_center_x = (3 * WINDOW_WIDTH) // 2
+        self.btn_vs_bot = Button(
+            "Vs. Bot",
+            SAND,
+            self.on_vs_bot_click,
+            top=(WINDOW_HEIGHT // 2) - 50,
+            left=left_center_x - button_width // 2,
+            width=button_width,
+            height=button_height,
+            font_size=50,
+            text_color=BLACK,
+            border_thickness=3,
+            border_color=BLACK,
+            hover_border_color=DARK_GREEN,
+            click_border_color=BEIGE,
+            padding=10,
         )
-        btn_random_text = "Random Game"
-        pygame.draw.rect(self.display_surface, button_color, self.btn_random)
-        random_surface = button_font.render(btn_random_text, True, BLACK)
-        random_rect = random_surface.get_rect(center=self.btn_random.center)
-        self.display_surface.blit(random_surface, random_rect)
 
-        # Seed Game Button (Centered)
-        self.btn_seed = pygame.Rect(
-            (WINDOW_WIDTH - button_width) // 2,
-            (WINDOW_HEIGHT // 2) + 50,
-            button_width,
-            button_height,
+        self.btn_time = Button(
+            "Time Attack",
+            SAND,
+            self.on_time_click,
+            top=(WINDOW_HEIGHT // 2) + 50,
+            left=left_center_x - button_width // 2,
+            width=button_width,
+            height=button_height,
+            font_size=50,
+            text_color=BLACK,
+            border_thickness=3,
+            border_color=BLACK,
+            hover_border_color=DARK_GREEN,
+            click_border_color=BEIGE,
+            padding=10,
         )
-        btn_seed_text = "Your Seed"
-        # Gray out the seed button if there is no input
-        seed_color = button_color if self.input_text else (100, 100, 100)
-        pygame.draw.rect(self.display_surface, seed_color, self.btn_seed)
-        seed_surface = button_font.render(btn_seed_text, True, BLACK)
-        seed_rect = seed_surface.get_rect(center=self.btn_seed.center)
-        self.display_surface.blit(seed_surface, seed_rect)
 
-        # Text box for seed input (Centered below seed button)
-        text_box_width, text_box_height = 300, 50
-        self.text_box_rect = pygame.Rect(
-            (WINDOW_WIDTH - text_box_width) // 2,
-            (WINDOW_HEIGHT // 2) + 150,
-            text_box_width,
-            text_box_height,
+        self.seed_textbox = TextBox(
+            "Custom Seed",
+            WHITE,
+            top=(WINDOW_HEIGHT // 2) - 15,
+            left=right_center_x - button_width // 2,
+            width=400,
+            height=50,
+            font_size=35,
+            text_color=MOSS_GREEN,
+            border_thickness=1,
+            border_color=BLACK,
+            active_border_color=DARK_GREEN,
+            padding=15,
+            disabled=False,
+            on_change=self.on_seed_change,
+            on_submit=None,
+            on_click=self.on_seed_click,
+            owner=self,
         )
-        box_color = WHITE if self.active else (150, 150, 150)
-        pygame.draw.rect(self.display_surface, box_color, self.text_box_rect, 2)
-        input_surface = button_font.render(self.input_text, True, WHITE)
-        input_rect = input_surface.get_rect(center=self.text_box_rect.center)
-        self.display_surface.blit(input_surface, input_rect)
+        self.seed_textbox.text = self.input_text  # Set initial text
 
-    def input(self, event, change_state) -> None:
-        # Handle mouse clicks
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.btn_random.collidepoint(event.pos):
-                self.start_game()
-                self.button_handled = True
-            elif self.btn_seed.collidepoint(event.pos) and self.input_text:
-                self.set_seed(int(self.input_text))
-                self.start_game()
-                self.button_handled = True
-            elif self.text_box_rect.collidepoint(event.pos):
-                self.active = True
-            else:
-                self.active = False
+        # button_font = pygame.font.Font(None, 50)
+        # title_pref = button_font.render("Options", True, SAND)
+        # title_pref_rect = pygame.Rect(
+        #     right_center_x - button_width // 2,
+        #     ((WINDOW_HEIGHT // 2) - button_height // 2) - 25,
+        #     button_width,
+        #     button_height,
+        # )
+        # self.display_surface.blit(title_pref, title_pref_rect)
 
-        # Handle text input (debounced)
-        if event.type == pygame.TEXTINPUT and self.active:
-            current_time = time.time()
-            # Only accept new digit if at least 300ms have passed
-            if current_time - self.last_input_time >= 0.1:
-                if event.text.isdigit():
-                    self.input_text += event.text
-                self.last_input_time = current_time
+        self.btn_vs_bot.draw(self.display_surface)
+        self.btn_time.draw(self.display_surface)
+        self.seed_textbox.draw(self.display_surface)
 
-        # Handle special keys (Backspace and Enter)
-        if event.type == pygame.KEYDOWN and self.active:
-            if event.key == pygame.K_RETURN:
-                if self.input_text:
-                    print(f"Seed: {self.input_text}")
-                    self.input_text = ""
-            elif event.key == pygame.K_BACKSPACE:
-                self.input_text = self.input_text[:-1]
+    def run(self) -> None:
+        pass
 
     def update(self, event, change_state) -> None:
         self.run()
-        self.input(event, change_state)
-        self.button_handled = False
+        if self.title_state == "main_menu":
+            self.btn_vs_bot.handle_event(event)
+            self.btn_time.handle_event(event)
+            self.seed_textbox.handle_event(event)
+
+    def get_seed(self) -> int:
+        if self.input_text == "Custom Seed":
+            return int(time.time())
+        else:
+            hash_obj = hashlib.sha256(self.input_text.encode("utf-8"))
+            return abs(int(hash_obj.hexdigest(), 16) % 1000000)
+
+    def on_vs_bot_click(self) -> None:
+        self.set_seed(self.get_seed())
+        self.title_state = "playing"
+        self.start_game()
+
+    def on_time_click(self) -> None:
+        self.set_game_mode("time_attack")
+        self.set_seed(self.get_seed())
+        self.title_state = "playing"
+        self.start_game()
+
+    def on_seed_change(self, textbox) -> None:
+        try:
+            self.input_text = textbox.text
+        except ValueError:
+            pass
+
+    def on_seed_click(self) -> None:
+        pass

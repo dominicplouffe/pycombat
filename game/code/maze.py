@@ -1,5 +1,5 @@
 import pygame
-from config import OBJ_WIDTH, OBJ_HEIGHT, SAND
+from config import OBJ_WIDTH, OBJ_HEIGHT, DARK_GREEN
 from sprite import RectSprite
 from mazelib.generate.Prims import Prims
 from mazelib import Maze
@@ -37,9 +37,11 @@ class LevelMaze:
             for x, cell in enumerate(row):
                 if cell == 1:
                     pos_x, pos_y = x * OBJ_WIDTH, y * OBJ_HEIGHT
-                    obj_rect = RectSprite(SAND, OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y)
+                    obj_rect = RectSprite(
+                        DARK_GREEN, OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y
+                    )
                     obj_hit = RectSprite(
-                        SAND,
+                        DARK_GREEN,
                         OBJ_WIDTH - 10,
                         OBJ_HEIGHT - 10,
                         pos_x + 5,

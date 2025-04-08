@@ -5,7 +5,7 @@ from config import (
     WINDOW_HEIGHT,
     WORLD_WIDTH,
     WORLD_HEIGHT,
-    DARK_GREEN,
+    SAND,
     OBJ_WIDTH,
     OBJ_HEIGHT,
     RED,
@@ -13,7 +13,6 @@ from config import (
     BLACK,
     MOSS_GREEN,
     BOT_DIFFICULTY,
-    RANKS,
 )
 
 from player import Player
@@ -30,10 +29,21 @@ class Level:
         player_stats: PlayerStats,
         level_number: int = 1,
         seed: int = 0,
+        game_mode: str = "time_attack",
+        get_total_time: callable = None,
+        set_total_time: callable = None,
+        start_game: callable = None,
+        reset_game: callable = None,
     ) -> None:
         self.maze = LevelMaze(seed=seed)
         self.level_number = level_number
         self.seed = seed
+        self.game_mode = game_mode
+        self.target_coins = 5 if game_mode == "vs_bot" else 10
+        self.set_total_time = set_total_time
+        self.get_total_time = get_total_time
+        self.start_game = start_game
+        self.reset_game = reset_game
 
         self.display_surface = pygame.display.get_surface()
         self.world = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
@@ -57,22 +67,26 @@ class Level:
             all_sprites=self.all_sprites,
             collect_coin_callback=self.collect_coin,
         )
-        self.bot = Player(
-            self.all_sprites,
-            self.maze,
-            player_stats,
-            is_bot=True,
-            bullets=self.bullets,
-            all_sprites=self.all_sprites,
-            collect_coin_callback=self.collect_coin,
-            speed=BOT_DIFFICULTY[level_number],
-        )
+        self.bot = None
+        if game_mode == "vs_bot":
+            self.bot = Player(
+                self.all_sprites,
+                self.maze,
+                player_stats,
+                is_bot=True,
+                bullets=self.bullets,
+                all_sprites=self.all_sprites,
+                collect_coin_callback=self.collect_coin,
+                speed=BOT_DIFFICULTY[level_number],
+            )
 
         self.draw_path()
         self.dt_sum = 0
         self.display_level_done = display_level_done
 
     def update(self, dt, event) -> None:
+        self.input(event)
+
         if self.has_path_power_up() and len(self.path) == 0:
             self.player.compute_path()
             self.draw_path()
@@ -80,10 +94,14 @@ class Level:
         if not self.has_path_power_up() and len(self.path) > 0:
             self.path = []
 
-        if self.has_ice_power_up():
-            self.bot.set_speed(BOT_DIFFICULTY[1])
-        else:
-            self.bot.set_speed(BOT_DIFFICULTY[self.level_number])
+        if self.game_mode == "vs_bot":
+            if self.has_ice_power_up():
+                self.bot.set_speed(BOT_DIFFICULTY[1])
+            else:
+                self.bot.set_speed(BOT_DIFFICULTY[self.level_number])
+
+        if self.game_mode == "time_attack":
+            self.set_total_time()
 
         self.all_sprites = pygame.sprite.Group(
             *self.maze.hit_obstacles,
@@ -96,7 +114,7 @@ class Level:
         if self.bot:
             self.all_sprites.add(self.bot)
 
-        self.world.fill(DARK_GREEN)
+        self.world.fill(SAND)
         self.all_sprites.update(dt, event)
         self.all_sprites.draw(self.world)
         self.draw_viewport()
@@ -105,6 +123,13 @@ class Level:
         self.draw_ui()
 
         self.draw_arrow_in_circle()
+
+    def input(self, event) -> None:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_r]:
+            self.start_game()
+        elif keys[pygame.K_m]:
+            self.reset_game()
 
     def draw_viewport(self) -> None:
         view_x = 0
@@ -130,23 +155,33 @@ class Level:
         font = pygame.font.Font(None, 36)
 
         # Coins Text
-        coins_text = font.render(
-            f"Coins: {self.player.coins} - Bot: {self.bot.coins}", True, BLACK
-        )
+        if self.game_mode == "vs_bot":
+            coins_text = font.render(
+                f"Coins: {self.player.coins} - Bot: {self.bot.coins}", True, BLACK
+            )
+        else:
+            coins_text = font.render(
+                f"Coins: {self.player.coins}/{self.target_coins}", True, BLACK
+            )
         coins_rect = coins_text.get_rect()
-        coins_rect.topleft = (10, 13)
+        coins_rect.topleft = (15, 15)
 
-        level_text = font.render(f"Level: {self.level_number:.0f}", True, BLACK)
-        level_rect = level_text.get_rect()
-        level_rect.topleft = (220, 13)
+        if self.game_mode == "time_attack":
+            level_text = font.render(f"Time: {self.get_total_time():.2f}", True, BLACK)
+            level_rect = level_text.get_rect()
+            level_rect.topleft = (coins_rect.topright[0] + 20, coins_rect.topright[1])
+        else:
+            level_text = font.render(f"Level: {self.level_number:.0f}", True, BLACK)
+            level_rect = level_text.get_rect()
+            level_rect.topleft = (coins_rect.topright[0] + 20, coins_rect.topright[1])
 
         seed_text = font.render(f"Seed: {self.seed}", True, BLACK)
         seed_rect = seed_text.get_rect()
-        seed_rect.topleft = (340, 13)
-
-        rank_text = font.render(f"Rank: {RANKS[self.level_number]}", True, BLACK)
-        rank_rect = rank_text.get_rect()
-        rank_rect.topleft = (500, 13)
+        # set seed top left to bottom right of screen
+        seed_rect.topleft = (
+            15,
+            WINDOW_HEIGHT - seed_text.get_height() - 15,
+        )
 
         # Draw background boxes with blue borders
         padding = 8
@@ -199,29 +234,6 @@ class Level:
             ),
         )
         self.display_surface.blit(level_text, level_rect)
-
-        pygame.draw.rect(
-            self.display_surface,
-            border_color,
-            (
-                rank_rect.x - padding,
-                rank_rect.y - padding,
-                rank_rect.width + 2 * padding,
-                rank_rect.height + 2 * padding,
-            ),
-            2,  # Border thickness
-        )
-        pygame.draw.rect(
-            self.display_surface,
-            box_color,
-            (
-                rank_rect.x - padding + 2,
-                rank_rect.y - padding + 2,
-                rank_rect.width + 2 * (padding - 2),
-                rank_rect.height + 2 * (padding - 2),
-            ),
-        )
-        self.display_surface.blit(rank_text, rank_rect)
 
         pygame.draw.rect(
             self.display_surface,
@@ -319,9 +331,9 @@ class Level:
         else:
             self.bot.increment_coins()
 
-        if self.player.coins >= 5:
+        if self.player.coins >= self.target_coins:
             self.display_level_done(True)
-        elif self.bot.coins >= 5:
+        elif self.game_mode == "vs_bot" and self.bot.coins >= self.target_coins:
             self.display_level_done(False)
 
     def draw_path(self) -> None:
@@ -354,6 +366,8 @@ class Level:
         ) or self.player_stats.power_ups.has_power_up(PowerUpChoices.PATH_PLUS)
 
     def has_ice_power_up(self) -> bool:
+        if not self.bot:
+            return False
         return self.player_stats.power_ups.has_power_up(
             PowerUpChoices.ICE
         ) or self.player_stats.power_ups.has_power_up(PowerUpChoices.ICE_PLUS)

@@ -1,8 +1,10 @@
 from pygame import Vector2 as vector
 from collections import deque
+import random
+import time
 
 
-def find_path(grid, start, goal):
+def find_path(grid, start, goal) -> list | None:
     rows, cols = len(grid), len(grid[0])
     queue = deque([start])
     visited = set([start])
@@ -37,40 +39,47 @@ def find_path(grid, start, goal):
     return None  # No path found
 
 
-def dfs(maze, start, goal) -> list | None:
-    rows, cols = len(maze), len(maze[0])
-    stack = [start]  # Use a list as a stack
-    visited = set([start])  # Track visited nodes
-    parent = {start: None}  # Track path
+def find_goal(intel_level, grid, correct_goal):
+    random_goals = {
+        1: 0.80,
+        2: 0.70,
+        3: 0.60,
+        4: 0.50,
+        5: 0.40,
+        6: 0.30,
+        7: 0.20,
+        8: 0.10,
+        9: 0.05,
+    }
 
-    while stack:
-        current = stack.pop()  # Get the last inserted node (LIFO)
+    random.seed(int(time.time()))
+    if intel_level == 0:
+        return correct_goal
 
-        # Check if we reached the goal
-        if current == goal:
-            path = []
-            while current:
-                path.append(current)
-                current = parent[current]
-            return path[::-1]  # Return the path from start to goal
+    if intel_level in random_goals:
+        r = random.random()
+        if r < random_goals[intel_level]:
+            return correct_goal
 
-        # Explore neighbors (up, down, left, right)
-        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            nr, nc = current[0] + dr, current[1] + dc
-            neighbor = (nr, nc)
+    random.seed(0)
+    goal = random_goal(grid)
 
-            # Check if the neighbor is within bounds and open (0)
-            if (
-                0 <= nr < rows
-                and 0 <= nc < cols
-                and maze[nr][nc] == 0
-                and neighbor not in visited
-            ):
-                stack.append(neighbor)  # Add to stack
-                visited.add(neighbor)  # Mark as visited
-                parent[neighbor] = current  # Track the path
+    return goal
 
-    return None  # Re
+
+def random_goal(grid) -> tuple:
+    """Generate a random goal position on the grid."""
+    rows, cols = len(grid), len(grid[0])
+
+    new_goal = (0, 0)
+    while True:
+        x = random.randint(0, rows - 1)
+        y = random.randint(0, cols - 1)
+        if grid[x][y] == 0:  # Check if the cell is open (0)
+            new_goal = (x, y)
+            break
+
+    return new_goal
 
 
 def find_direction(

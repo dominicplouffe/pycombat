@@ -7,7 +7,7 @@ from sprite import RectSprite
 from bullet import Bullet
 from maze import LevelMaze
 from game_timer import Timer
-from ai import find_path, find_direction
+from ai import find_path, find_direction, find_goal
 from player_stats import PlayerStats
 from power_ups import PowerUpChoices
 
@@ -24,6 +24,7 @@ class Player(pygame.sprite.Sprite):
         all_sprites: pygame.sprite.Group = pygame.sprite.Group(),
         collect_coin_callback: callable = None,
         speed: int = 350,
+        intel_level: int = 0,  # The lower the more intelligent
     ) -> None:
         super().__init__(groups)
 
@@ -45,6 +46,7 @@ class Player(pygame.sprite.Sprite):
         self.collect_coin_callback = collect_coin_callback
         self.coins = 0
         self.player_stats = player_stats
+        self.intel_level = intel_level
 
         self.hit_rect = RectSprite(
             BLACK, self.rect.width - 10, self.rect.height - 10, 0, 0
@@ -65,7 +67,7 @@ class Player(pygame.sprite.Sprite):
         self.bullet_timer.activate()
 
         self.path = []
-        self.path_index = 0
+        self.path_index = 9
         self.compute_path()
 
     def update(self, dt: float, event) -> None:
@@ -250,9 +252,17 @@ class Player(pygame.sprite.Sprite):
         )
 
     def compute_path(self) -> None:
+        goal = (self.maze.coin.grid_row, self.maze.coin.grid_col)
+        if self.is_bot:
+            goal = find_goal(
+                self.intel_level,
+                self.maze.grid,
+                goal,
+            )
+
         self.path = find_path(
             self.maze.grid,
             (self.topleft_grid_row, self.topleft_grid_col),
-            (self.maze.coin.grid_row, self.maze.coin.grid_col),
+            goal,
         )
         self.path_index = 0
