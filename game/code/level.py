@@ -5,7 +5,6 @@ from config import (
     WINDOW_HEIGHT,
     WORLD_WIDTH,
     WORLD_HEIGHT,
-    SAND,
     OBJ_WIDTH,
     OBJ_HEIGHT,
     RED,
@@ -20,6 +19,8 @@ from maze import LevelMaze
 from sprite import RectSprite
 from player_stats import PlayerStats
 from power_ups import PowerUpChoices
+from objects.background import Background
+# from objects.tile import create_background
 
 
 class Level:
@@ -49,10 +50,12 @@ class Level:
         self.world = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
         self.bullets = pygame.sprite.Group()
         self.path = pygame.sprite.Group()
+        self.background = Background(0, 0)
         self.player_stats = player_stats
 
         self.all_sprites = pygame.sprite.Group(
             *self.maze.obstacles,
+            self.background,
             self.maze.hit_obstacles,
             self.maze.coin,
             self.bullets,
@@ -105,6 +108,7 @@ class Level:
 
         self.all_sprites = pygame.sprite.Group(
             *self.maze.hit_obstacles,
+            self.background,
             self.maze.obstacles,
             self.path,
             self.maze.coin,
@@ -114,7 +118,7 @@ class Level:
         if self.bot:
             self.all_sprites.add(self.bot)
 
-        self.world.fill(SAND)
+        # self.world.fill(SAND)
         self.all_sprites.update(dt, event)
         self.all_sprites.draw(self.world)
         self.draw_viewport()

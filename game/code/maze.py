@@ -3,7 +3,8 @@ from config import OBJ_WIDTH, OBJ_HEIGHT, DARK_GREEN
 from sprite import RectSprite
 from mazelib.generate.Prims import Prims
 from mazelib import Maze
-from coin import Coin
+from game.code.objects.coin import Coin
+from objects.wall import Wall
 
 
 class LevelMaze:
@@ -37,9 +38,10 @@ class LevelMaze:
             for x, cell in enumerate(row):
                 if cell == 1:
                     pos_x, pos_y = x * OBJ_WIDTH, y * OBJ_HEIGHT
-                    obj_rect = RectSprite(
-                        DARK_GREEN, OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y
-                    )
+                    Wall(obstacles, pos_x, pos_y)
+                    # RectSprite(
+                    #     DARK_GREEN, OBJ_WIDTH, OBJ_HEIGHT, pos_x, pos_y
+                    # )
                     obj_hit = RectSprite(
                         DARK_GREEN,
                         OBJ_WIDTH - 10,
@@ -47,7 +49,7 @@ class LevelMaze:
                         pos_x + 5,
                         pos_y + 5,
                     )
-                    obstacles.add(obj_rect)
+                    # obstacles.add(obj_rect)
                     hit_obstacles.add(obj_hit)
 
         return obstacles, hit_obstacles

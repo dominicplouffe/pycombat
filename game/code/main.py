@@ -43,6 +43,7 @@ class Game:
             start_game=self.start_game,
             reset_game=self.reset_game,
         )
+        # self.level.generate()
         self.level_done = LevelDone(
             self.start_game,
             self.restart_level,
@@ -81,6 +82,8 @@ class Game:
 
     def reset_game(self) -> None:
         self.game_state = "title"
+        del self.level
+        del self.level_done
 
     def set_seed(self, seed: int) -> None:
         self.seed = seed
@@ -113,7 +116,6 @@ class Game:
 
             if self.game_state == "title":
                 self.title.title_state = "main_menu"
-                self.title.run()
                 self.title.update(event, self.start_game)
             if self.game_state == "playing":
                 self.player_stats.power_ups.update()

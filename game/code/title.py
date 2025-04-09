@@ -13,6 +13,7 @@ from config import (
 )
 from controls.button import Button
 from controls.textbox import TextBox
+from controls.label import Label
 
 
 class Title:
@@ -30,22 +31,22 @@ class Title:
 
     def setup_ui(self) -> None:
         self.display_surface.fill(MOSS_GREEN)
-        title_font = pygame.font.Font(None, 80)  # Larger font for title
-        title_surface = title_font.render("PyCombat", True, SAND)
-        title_rect = title_surface.get_rect(
-            center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4)
+        self.title_label = Label(
+            "PyCombat",
+            top=150,
+            left=WINDOW_HEIGHT // 2 + 135,
+            font_size=80,
+            text_color=SAND,
         )
-        self.display_surface.blit(title_surface, title_rect)
 
         button_width, button_height = 300, 70
-        left_center_x = WINDOW_WIDTH // 2
         right_center_x = (3 * WINDOW_WIDTH) // 2
         self.btn_vs_bot = Button(
             "Vs. Bot",
             SAND,
             self.on_vs_bot_click,
-            top=(WINDOW_HEIGHT // 2) - 50,
-            left=left_center_x - button_width // 2,
+            top=(WINDOW_HEIGHT // 2) - 100,
+            left=WINDOW_WIDTH // 2 - button_width // 2,
             width=button_width,
             height=button_height,
             font_size=50,
@@ -61,8 +62,8 @@ class Title:
             "Time Attack",
             SAND,
             self.on_time_click,
-            top=(WINDOW_HEIGHT // 2) + 50,
-            left=left_center_x - button_width // 2,
+            top=(WINDOW_HEIGHT // 2) - 25,
+            left=WINDOW_WIDTH // 2 - button_width // 2,
             width=button_width,
             height=button_height,
             font_size=50,
@@ -77,8 +78,8 @@ class Title:
         self.seed_textbox = TextBox(
             "Custom Seed",
             WHITE,
-            top=(WINDOW_HEIGHT // 2) - 15,
-            left=right_center_x - button_width // 2,
+            top=0,
+            left=0,
             width=400,
             height=50,
             font_size=35,
@@ -95,22 +96,22 @@ class Title:
         )
         self.seed_textbox.text = self.input_text  # Set initial text
 
-        # button_font = pygame.font.Font(None, 50)
-        # title_pref = button_font.render("Options", True, SAND)
-        # title_pref_rect = pygame.Rect(
-        #     right_center_x - button_width // 2,
-        #     ((WINDOW_HEIGHT // 2) - button_height // 2) - 25,
-        #     button_width,
-        #     button_height,
-        # )
-        # self.display_surface.blit(title_pref, title_pref_rect)
+        button_font = pygame.font.Font(None, 50)
+        title_pref = button_font.render("Options", True, SAND)
+        title_pref_rect = pygame.Rect(
+            right_center_x - button_width // 2,
+            ((WINDOW_HEIGHT // 2) - button_height // 2) - 25,
+            button_width,
+            button_height,
+        )
+        self.display_surface.blit(title_pref, title_pref_rect)
 
+    def run(self) -> None:
+        self.display_surface.fill(MOSS_GREEN)
         self.btn_vs_bot.draw(self.display_surface)
         self.btn_time.draw(self.display_surface)
         self.seed_textbox.draw(self.display_surface)
-
-    def run(self) -> None:
-        pass
+        self.title_label.draw(self.display_surface)
 
     def update(self, event, change_state) -> None:
         self.run()
