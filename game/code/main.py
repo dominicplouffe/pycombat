@@ -116,7 +116,7 @@ class Game:
 
             if self.game_state == "title":
                 self.title.title_state = "main_menu"
-                self.title.update(event, self.start_game)
+                self.title.update(dt, event, self.start_game)
             if self.game_state == "playing":
                 self.player_stats.power_ups.update()
                 self.level.update(dt, event)

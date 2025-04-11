@@ -21,7 +21,7 @@ class Button:
         padding=10,
         disabled=False,
         on_hover=None,
-        owner=None,
+        owne=None,
     ) -> None:
         """
         Initializes the button.
@@ -65,11 +65,15 @@ class Button:
         self.on_hover = on_hover
 
         # Initialize font and render the text
-        self.font = (
-            pygame.font.Font(self.font_name, self.font_size)
-            if self.font_name
-            else pygame.font.Font(None, self.font_size)
-        )
+
+        if font_name:
+            self.font = pygame.font.SysFont(font_name, self.font_size)
+        else:
+            self.font = (
+                pygame.font.Font(self.font_name, self.font_size)
+                if self.font_name
+                else pygame.font.Font(None, self.font_size)
+            )
         self.text_surf = self.font.render(
             self.text, True, pygame.Color(self.text_color)
         )

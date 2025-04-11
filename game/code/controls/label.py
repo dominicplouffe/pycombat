@@ -45,11 +45,14 @@ class Label:
         self.antialias = antialias
 
         # Initialize the font and render the text.
-        self.font = (
-            pygame.font.Font(self.font_name, self.font_size)
-            if self.font_name
-            else pygame.font.Font(None, self.font_size)
-        )
+        if self.font_name:
+            self.font = pygame.font.SysFont(font_name, self.font_size)
+        else:
+            self.font = (
+                pygame.font.Font(self.font_name, self.font_size)
+                if self.font_name
+                else pygame.font.Font(None, self.font_size)
+            )
         self.render_text()
 
     def render_text(self):
