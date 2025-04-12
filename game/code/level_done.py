@@ -13,6 +13,7 @@ class LevelDone:
         player_stats: PlayerStats,
         game_mode: str = "vs_bot",
         get_total_time: callable = 0,
+        difficulty: str = "easy",
     ) -> None:
         self.display_surface = pygame.display.get_surface()
         self.btn_vs_computer = None
@@ -29,6 +30,7 @@ class LevelDone:
         self.start_game = start_game
         self.player_stats = player_stats
         self.game_mode = game_mode
+        self.difficulty = difficulty
 
     def run(self) -> None:
         self.display_surface.fill(BLACK)
@@ -69,7 +71,7 @@ class LevelDone:
     def input(self, event) -> None:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_r]:
-            self.start_game()
+            self.start_game(self.difficulty)
         elif keys[pygame.K_m]:
             self.reset_game()
 

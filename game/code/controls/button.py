@@ -21,7 +21,12 @@ class Button:
         padding=10,
         disabled=False,
         on_hover=None,
-        owne=None,
+        is_toggle_button=False,
+        toggle_color="blue",
+        toggle_text_color="white",
+        toggle_border_color="black",
+        is_selected=False,
+        on_selected=None,
     ) -> None:
         """
         Initializes the button.
@@ -63,9 +68,22 @@ class Button:
         self.padding = padding
         self.disabled = disabled
         self.on_hover = on_hover
+        self.is_toggle_button = is_toggle_button
+        self.toggle_color = toggle_color
+        self.toggle_text_color = toggle_text_color
+        self.toggle_border_color = toggle_border_color
+        self.is_selected = is_selected
+        self.on_selected = on_selected
+
+        self.button_color = pygame.Color(self.bg_color)
+        self.button_border_color = pygame.Color(self.border_color)
+        self.button_text_color = pygame.Color(self.text_color)
+        if self.is_toggle_button and self.is_selected:
+            self.button_color = pygame.Color(self.toggle_color)
+            self.button_text_color = pygame.Color(self.toggle_text_color)
+            self.button_border_color = pygame.Color(self.toggle_border_color)
 
         # Initialize font and render the text
-
         if font_name:
             self.font = pygame.font.SysFont(font_name, self.font_size)
         else:
@@ -75,7 +93,7 @@ class Button:
                 else pygame.font.Font(None, self.font_size)
             )
         self.text_surf = self.font.render(
-            self.text, True, pygame.Color(self.text_color)
+            self.text, True, pygame.Color(self.button_text_color)
         )
         text_width, text_height = self.text_surf.get_size()
 
@@ -115,15 +133,31 @@ class Button:
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if self.pressed and self.rect.collidepoint(event.pos):
-                    self.on_click()  # Trigger the click callback on mouse up
+                    if self.on_click:
+                        self.on_click()  # Trigger the click callback on mouse up
+
+                    if self.is_toggle_button and not self.is_selected:
+                        self.is_selected = not self.is_selected
+                        if self.on_selected:
+                            self.on_selected(self.is_selected)
                 self.pressed = False
 
     def draw(self, surface) -> None:
         """
         Draws the button on the given surface.
         """
+        if self.is_toggle_button:
+            if not self.is_selected:
+                self.button_color = self.bg_color
+                self.button_border_color = self.border_color
+                self.button_text_color = self.text_color
+            else:
+                self.button_color = self.toggle_color
+                self.button_border_color = self.toggle_border_color
+                self.button_text_color = self.toggle_text_color
+
         # Draw the background
-        pygame.draw.rect(surface, self.bg_color, self.rect)
+        pygame.draw.rect(surface, self.button_color, self.rect)
 
         # Determine border color based on state
         if self.disabled:
@@ -133,7 +167,11 @@ class Button:
         elif self.hover:
             current_border_color = pygame.Color(self.hover_border_color)
         else:
-            current_border_color = pygame.Color(self.border_color)
+            current_border_color = pygame.Color(self.button_border_color)
+
+        self.text_surf = self.font.render(
+            self.text, True, pygame.Color(self.button_text_color)
+        )
 
         # Draw the border
         pygame.draw.rect(

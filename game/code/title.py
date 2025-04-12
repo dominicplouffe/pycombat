@@ -5,6 +5,7 @@ from config import (
     MOSS_GREEN,
     DARK_GREEN,
     BEIGE,
+    BLACK,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     BUTTON_BACKGROUND,
@@ -30,8 +31,8 @@ class Title:
         self.start_game = start_game
         self.set_seed = set_seed
         self.set_game_mode = set_game_mode
-
         self.show_settings = False
+        self.difficulty = "easy"
 
         self.setup_ui()
         self.setup_settings()
@@ -124,10 +125,10 @@ class Title:
         self.settings_sprites = pygame.sprite.Group()
         self.settings_modal = Modal(
             self.settings_sprites,
-            width=400,
+            width=500,
             height=600,
             top=WINDOW_HEIGHT // 2 - 300,
-            left=WINDOW_WIDTH // 2 - 200,
+            left=WINDOW_WIDTH // 2 - 250,
             surface=self.display_surface,
             title="Settings",
         )
@@ -204,7 +205,7 @@ class Title:
         self.btn_easy = Button(
             "Easy",
             BUTTON_BACKGROUND,
-            self.on_difficulty_click,
+            None,
             top=(WINDOW_HEIGHT // 2) + 30,
             left=WINDOW_WIDTH // 2 - 200 + 30,
             width=150,
@@ -217,12 +218,18 @@ class Title:
             hover_border_color=BEIGE,
             click_border_color=BEIGE,
             padding=5,
+            is_toggle_button=True,
+            toggle_color=DARK_GREEN,
+            toggle_text_color=BLACK,
+            toggle_border_color=BUTTON_BORDER,
+            is_selected=True,
+            on_selected=self.on_difficulty_click,
         )
 
         self.btn_hard = Button(
             "Hard",
             BUTTON_BACKGROUND,
-            self.on_difficulty_click,
+            None,
             top=(WINDOW_HEIGHT // 2) + 30,
             left=WINDOW_WIDTH // 2 - 200 + 220,
             width=150,
@@ -235,6 +242,12 @@ class Title:
             hover_border_color=BEIGE,
             click_border_color=BEIGE,
             padding=5,
+            is_toggle_button=True,
+            toggle_color=DARK_GREEN,
+            toggle_text_color=BLACK,
+            toggle_border_color=BUTTON_BORDER,
+            is_selected=False,
+            on_selected=self.on_difficulty_click,
         )
 
     def run(self) -> None:
@@ -266,6 +279,8 @@ class Title:
             self.btn_time.handle_event(event)
             self.btn_options.handle_event(event)
             self.btn_settings_ok.handle_event(event)
+            self.btn_easy.handle_event(event)
+            self.btn_hard.handle_event(event)
             self.seed_textbox.handle_event(event)
 
             self.ui_sprites.update(dt, event)
@@ -284,19 +299,35 @@ class Title:
     def on_vs_bot_click(self) -> None:
         self.set_seed(self.get_seed())
         self.title_state = "playing"
-        self.start_game()
+        self.start_game(self.difficulty)
 
     def on_time_click(self) -> None:
         self.set_game_mode("time_attack")
         self.set_seed(self.get_seed())
         self.title_state = "playing"
-        self.start_game()
+        self.start_game(self.difficulty)
 
     def on_settings_click(self) -> None:
         self.show_settings = not self.show_settings
 
-    def on_difficulty_click(self) -> None:
-        pass
+        if self.show_settings:
+            self.btn_vs_bot.disabled = True
+            self.btn_time.disabled = True
+            self.btn_options.disabled = True
+        else:
+            self.btn_vs_bot.disabled = False
+            self.btn_time.disabled = False
+            self.btn_options.disabled = False
+
+    def on_difficulty_click(self, is_selected: bool) -> None:
+        if self.difficulty == "easy":
+            self.btn_easy.is_selected = False
+            self.btn_easy.draw(self.display_surface)
+            self.difficulty = "hard"
+        else:
+            self.btn_hard.is_selected = False
+            self.btn_hard.draw(self.display_surface)
+            self.difficulty = "easy"
 
     def on_seed_change(self, textbox) -> None:
         try:

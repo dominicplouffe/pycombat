@@ -12,6 +12,7 @@ from config import (
     BLACK,
     MOSS_GREEN,
     BOT_DIFFICULTY,
+    SAND,
 )
 
 from player import Player
@@ -35,6 +36,7 @@ class Level:
         set_total_time: callable = None,
         start_game: callable = None,
         reset_game: callable = None,
+        difficulty: str = "easy",
     ) -> None:
         self.maze = LevelMaze(seed=seed)
         self.level_number = level_number
@@ -45,6 +47,7 @@ class Level:
         self.get_total_time = get_total_time
         self.start_game = start_game
         self.reset_game = reset_game
+        self.difficulty = difficulty
 
         self.display_surface = pygame.display.get_surface()
         self.world = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
@@ -81,6 +84,7 @@ class Level:
                 all_sprites=self.all_sprites,
                 collect_coin_callback=self.collect_coin,
                 speed=BOT_DIFFICULTY[level_number],
+                intel_level=3 if difficulty == "easy" else 0,
             )
 
         self.draw_path()
@@ -118,7 +122,7 @@ class Level:
         if self.bot:
             self.all_sprites.add(self.bot)
 
-        # self.world.fill(SAND)
+        self.world.fill(SAND)
         self.all_sprites.update(dt, event)
         self.all_sprites.draw(self.world)
         self.draw_viewport()
@@ -131,7 +135,7 @@ class Level:
     def input(self, event) -> None:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_r]:
-            self.start_game()
+            self.start_game(self.difficulty)
         elif keys[pygame.K_m]:
             self.reset_game()
 
@@ -276,6 +280,8 @@ class Level:
         return angle
 
     def draw_arrow_in_circle(self) -> None:
+        if self.difficulty != "easy":
+            return
         coin_player_angle = self.calculate_angle(
             self.player.rect.x,
             self.player.rect.y,

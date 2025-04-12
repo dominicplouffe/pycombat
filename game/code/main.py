@@ -27,7 +27,7 @@ class Game:
         self.level_start_time = time.time()
         self.level_total_time = 0
 
-    def start_game(self) -> None:
+    def start_game(self, difficulty: str) -> None:
         random.seed(0)
         self.level_number = 1
         self.level_start_time = time.time()
@@ -42,6 +42,7 @@ class Game:
             set_total_time=self.set_total_time,
             start_game=self.start_game,
             reset_game=self.reset_game,
+            difficulty=difficulty,
         )
         # self.level.generate()
         self.level_done = LevelDone(
@@ -51,10 +52,11 @@ class Game:
             self.player_stats,
             game_mode=self.game_mode,
             get_total_time=self.get_total_time,
+            difficulty=difficulty,
         )
         self.game_state = "playing"
 
-    def restart_level(self) -> None:
+    def restart_level(self, difficulty) -> None:
         random.seed(0)
         self.level_number += 1
         self.level_start_time = time.time()
@@ -69,6 +71,7 @@ class Game:
             set_total_time=self.set_total_time,
             start_game=self.start_game,
             reset_game=self.reset_game,
+            difficulty=difficulty,
         )
         self.level_done = LevelDone(
             self.start_game,
@@ -77,6 +80,7 @@ class Game:
             self.player_stats,
             game_mode=self.game_mode,
             get_total_time=self.get_total_time,
+            difficulty=difficulty,
         )
         self.game_state = "playing"
 
