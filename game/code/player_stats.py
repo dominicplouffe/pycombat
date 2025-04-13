@@ -5,8 +5,8 @@ import pickle
 class PlayerStats:
     def __init__(self) -> None:
         self.coins = 0
-        self.bullets = 3
-        self.path = 3
+        self.bullets = 0
+        self.path = 0
         self.power_ups = PowerUps()
 
     def add_coins(self, amount: int) -> None:

@@ -38,7 +38,7 @@ class Level:
         reset_game: callable = None,
         difficulty: str = "easy",
     ) -> None:
-        self.maze = LevelMaze(seed=seed)
+        self.maze = LevelMaze(seed=seed, game_mode=game_mode)
         self.level_number = level_number
         self.seed = seed
         self.game_mode = game_mode

@@ -191,6 +191,12 @@ class Player(pygame.sprite.Sprite):
         if self.maze.collide_coin(self) and self.collect_coin_callback:
             self.collect_coin_callback(self.is_bot)
 
+        if self.maze.collide_ammo(self):
+            self.player_stats.add_bullets(5)
+
+        if self.maze.collide_path(self):
+            self.player_stats.add_path(1)
+
     def stop_bullet(self) -> None:
         self.bullet_pressed = False
         self.bullet_timer.deactivate()

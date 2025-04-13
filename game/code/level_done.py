@@ -80,6 +80,19 @@ class LevelDone:
             )
             self.r_text.center_text(WINDOW_WIDTH)
             self.r_text.draw(self.display_surface)
+
+            if self.game_mode == "time_attack":
+                time_text = f"Finish Time: {self.get_total_time():.2f} seconds"
+                self.finish_time_label = Label(
+                    time_text,
+                    top=WINDOW_HEIGHT // 2 - 300 + 360,
+                    font_size=20,
+                    text_color=LABEL_COLOR,
+                    font_name="Menlo",
+                )
+                self.finish_time_label.center_text(WINDOW_WIDTH)
+                self.finish_time_label.draw(self.display_surface)
+
         elif self.title_state == "level_done":
             self.settings_title = Label(
                 "Level Completed!",
