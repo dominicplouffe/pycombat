@@ -16,7 +16,7 @@ class Bullet(pygame.sprite.Sprite):
     ) -> None:
         super().__init__(groups)
         self.direction = vector(gun_pos[0], gun_pos[1])
-        self.image = import_image("game", "support", "images", "bullet", "bullet")
+        self.image = import_image("game", "support", "images", "bullet", "bullet2")
         self.rect = self.image.get_rect()
         self.rect.x = player_topleft[0] - 7.5
         self.rect.y = player_topleft[1] - 7.5

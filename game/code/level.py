@@ -8,9 +8,9 @@ from config import (
     OBJ_WIDTH,
     OBJ_HEIGHT,
     RED,
+    CHERRY_RED,
     WHITE,
     BLACK,
-    MOSS_GREEN,
     BOT_DIFFICULTY,
     SAND,
 )
@@ -21,7 +21,7 @@ from sprite import RectSprite
 from player_stats import PlayerStats
 from power_ups import PowerUpChoices
 from objects.background import Background
-# from objects.tile import create_background
+from objects.powerup import Powerup
 
 
 class Level:
@@ -53,6 +53,7 @@ class Level:
         self.world = pygame.Surface((WORLD_WIDTH, WORLD_HEIGHT))
         self.bullets = pygame.sprite.Group()
         self.path = pygame.sprite.Group()
+        self.power_ups = pygame.sprite.Group()
         self.background = Background(0, 0)
         self.player_stats = player_stats
 
@@ -63,6 +64,7 @@ class Level:
             self.maze.coin,
             self.bullets,
             self.path,
+            self.power_ups,
         )
         self.player = Player(
             self.all_sprites,
@@ -118,6 +120,7 @@ class Level:
             self.maze.coin,
             self.bullets,
             self.player,
+            self.power_ups,
         )
         if self.bot:
             self.all_sprites.add(self.bot)
@@ -132,6 +135,8 @@ class Level:
 
         self.draw_arrow_in_circle()
 
+        # self.display_level_done(True)
+
     def input(self, event) -> None:
         keys = pygame.key.get_pressed()
         if keys[pygame.K_r]:
@@ -140,28 +145,29 @@ class Level:
             self.reset_game()
 
     def draw_viewport(self) -> None:
-        view_x = 0
-        view_y = 0
-        if self.player.rect.x > WINDOW_WIDTH // 2:
-            view_x = self.player.rect.x - (WINDOW_WIDTH // 2)
+        # Get dimensions of the world
+        world_width, world_height = self.world.get_size()
 
-            if view_x > WINDOW_WIDTH - OBJ_WIDTH:
-                view_x = WINDOW_WIDTH - OBJ_WIDTH
-        if self.player.rect.y > WINDOW_HEIGHT // 2:
-            view_y = self.player.rect.y - (WINDOW_HEIGHT // 2)
+        # Center the camera on the player
+        player_center_x = self.player.rect.centerx
+        player_center_y = self.player.rect.centery
 
-            if view_y > WINDOW_HEIGHT - OBJ_HEIGHT:
-                view_y = WINDOW_HEIGHT - OBJ_HEIGHT
+        # Calculate top-left corner of the viewport
+        view_x = player_center_x - WINDOW_WIDTH // 2
+        view_y = player_center_y - WINDOW_HEIGHT // 2
 
+        # Clamp to ensure viewport stays within world boundaries
+        view_x = max(0, min(view_x, world_width - WINDOW_WIDTH))
+        view_y = max(0, min(view_y, world_height - WINDOW_HEIGHT))
+
+        # Blit the world to the display surface, showing only the viewport portion
         self.display_surface.blit(
-            self.world,
-            (0, 0),
-            (view_x, view_y, WINDOW_WIDTH, WINDOW_HEIGHT),
+            self.world, (0, 0), (view_x, view_y, WINDOW_WIDTH, WINDOW_HEIGHT)
         )
 
-    def draw_ui(self) -> None:
-        font = pygame.font.Font(None, 36)
-
+    def draw_coin_ui(
+        self, font, padding: int, border_color: tuple[int], box_color: tuple[int]
+    ) -> None:
         # Coins Text
         if self.game_mode == "vs_bot":
             coins_text = font.render(
@@ -173,28 +179,6 @@ class Level:
             )
         coins_rect = coins_text.get_rect()
         coins_rect.topleft = (15, 15)
-
-        if self.game_mode == "time_attack":
-            level_text = font.render(f"Time: {self.get_total_time():.2f}", True, BLACK)
-            level_rect = level_text.get_rect()
-            level_rect.topleft = (coins_rect.topright[0] + 20, coins_rect.topright[1])
-        else:
-            level_text = font.render(f"Level: {self.level_number:.0f}", True, BLACK)
-            level_rect = level_text.get_rect()
-            level_rect.topleft = (coins_rect.topright[0] + 20, coins_rect.topright[1])
-
-        seed_text = font.render(f"Seed: {self.seed}", True, BLACK)
-        seed_rect = seed_text.get_rect()
-        # set seed top left to bottom right of screen
-        seed_rect.topleft = (
-            15,
-            WINDOW_HEIGHT - seed_text.get_height() - 15,
-        )
-
-        # Draw background boxes with blue borders
-        padding = 8
-        box_color = WHITE
-        border_color = BLACK
 
         # Draw the box for the coins
         pygame.draw.rect(
@@ -220,6 +204,29 @@ class Level:
         )
         self.display_surface.blit(coins_text, coins_rect)
 
+        return coins_rect
+
+    def draw_power_ups(self) -> None:
+        Powerup(self.display_surface, 7, 55, "bullet", self.player_stats.bullets)
+        Powerup(self.display_surface, 7, 102, "path", self.player_stats.path)
+
+    def draw_level_ui(
+        self,
+        font,
+        padding: int,
+        border_color: tuple[int],
+        box_color: tuple[int],
+        coins_rect: pygame.Rect,
+    ) -> None:
+        if self.game_mode == "time_attack":
+            level_text = font.render(f"Time: {self.get_total_time():.2f}", True, BLACK)
+            level_rect = level_text.get_rect()
+            level_rect.topleft = (coins_rect.topright[0] + 20, coins_rect.topright[1])
+        else:
+            level_text = font.render(f"Level: {self.level_number:.0f}", True, BLACK)
+            level_rect = level_text.get_rect()
+            level_rect.topleft = (coins_rect.topright[0] + 20, coins_rect.topright[1])
+
         pygame.draw.rect(
             self.display_surface,
             border_color,
@@ -243,6 +250,17 @@ class Level:
         )
         self.display_surface.blit(level_text, level_rect)
 
+    def draw_seds_ui(
+        self, font, padding: int, border_color: tuple[int], box_color: tuple[int]
+    ) -> None:
+        seed_text = font.render(f"Seed: {self.seed}", True, BLACK)
+        seed_rect = seed_text.get_rect()
+        # set seed top left to bottom right of screen
+        seed_rect.topleft = (
+            15,
+            WINDOW_HEIGHT - seed_text.get_height() - 15,
+        )
+
         pygame.draw.rect(
             self.display_surface,
             border_color,
@@ -265,6 +283,17 @@ class Level:
             ),
         )
         self.display_surface.blit(seed_text, seed_rect)
+
+    def draw_ui(self) -> None:
+        font = pygame.font.Font(None, 36)
+        padding = 8
+        box_color = WHITE
+        border_color = BLACK
+
+        coins_rect = self.draw_coin_ui(font, padding, border_color, box_color)
+        self.draw_level_ui(font, padding, border_color, box_color, coins_rect)
+        self.draw_seds_ui(font, padding, border_color, box_color)
+        self.draw_power_ups()
 
     def calculate_angle(self, x1, y1, x2, y2) -> float:
         # Calculate the difference in coordinates
@@ -355,12 +384,21 @@ class Level:
             pos_x, pos_y = col * OBJ_WIDTH, row * OBJ_HEIGHT
 
             path_rect = RectSprite(
-                MOSS_GREEN,
+                CHERRY_RED,
                 OBJ_WIDTH // 4,
                 OBJ_HEIGHT // 4,
                 pos_x + (OBJ_WIDTH // 2 - OBJ_WIDTH // 8),
                 pos_y + (OBJ_HEIGHT // 2 - OBJ_HEIGHT // 8),
             )
+
+            # Draw black border around the path_rect
+            pygame.draw.rect(
+                path_rect.image,
+                BLACK,
+                (0, 0, path_rect.rect.width, path_rect.rect.height),
+                1,
+            )
+
             # check if path_rect collides with self.maze.obstacles
             for obstacle in self.maze.obstacles:
                 if path_rect.rect.colliderect(obstacle.rect):

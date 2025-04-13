@@ -6,7 +6,7 @@ from level import Level
 from title import Title
 import random
 from level_done import LevelDone
-from player_stats import PlayerStats
+from player_stats import load_player_stats
 
 
 class Game:
@@ -17,7 +17,7 @@ class Game:
         self.display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("PyCombat")
 
-        self.player_stats = PlayerStats()
+        self.player_stats = load_player_stats()
 
         self.game_state = "title"
         self.clock = pygame.time.Clock()

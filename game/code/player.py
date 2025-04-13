@@ -9,7 +9,6 @@ from maze import LevelMaze
 from game_timer import Timer
 from ai import find_path, find_direction, find_goal
 from player_stats import PlayerStats
-from power_ups import PowerUpChoices
 
 
 class Player(pygame.sprite.Sprite):
@@ -43,6 +42,8 @@ class Player(pygame.sprite.Sprite):
         self.bullets = bullets
         self.all_sprites = all_sprites
         self.bullet_pressed = False
+        self.power_up_pressed = None
+
         self.collect_coin_callback = collect_coin_callback
         self.coins = 0
         self.player_stats = player_stats
@@ -80,6 +81,10 @@ class Player(pygame.sprite.Sprite):
 
         self.bullet_timer.update()
 
+        if self.power_up_pressed:
+            if self.power_up_pressed + 0.5 < dt:
+                self.power_up_pressed = None
+
     def set_speed(self, speed: int) -> None:
         self.speed = speed
 
@@ -112,14 +117,17 @@ class Player(pygame.sprite.Sprite):
             if self.gun_pos.y != 1:
                 self.change_gun_direction(vector(0, 1))
 
-        if keys[pygame.K_1]:
+        if (
+            keys[pygame.K_a]
+            and self.player_stats.path > 0
+            and not self.power_up_pressed
+        ):
             self.player_stats.power_ups.add_path_power_up()
+            self.player_stats.remove_path(1)
+            self.power_up_pressed = dt
 
         if keys[pygame.K_2]:
             self.player_stats.power_ups.add_path_plus_power_up()
-
-        if keys[pygame.K_3]:
-            self.player_stats.power_ups.add_bullet_power_up()
 
         if keys[pygame.K_4]:
             self.player_stats.power_ups.add_ice_power_up()
@@ -127,10 +135,12 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_5]:
             self.player_stats.power_ups.add_ice_plus_power_up()
 
-        if keys[pygame.K_SPACE] and self.player_stats.power_ups.has_power_up(
-            PowerUpChoices.BULLET
-        ):
-            if not self.bullet_timer.active and not self.bullet_pressed:
+        if keys[pygame.K_SPACE]:
+            if (
+                self.player_stats.bullets > 0
+                and not self.bullet_timer.active
+                and not self.bullet_pressed
+            ):
                 self.bullet_pressed = True
                 self.bullet_timer.activate()
                 self.bullets.add(
@@ -142,6 +152,7 @@ class Player(pygame.sprite.Sprite):
                         callback=self.stop_bullet,
                     )
                 )
+                self.player_stats.remove_bullets(1)
 
         direction = vector(input_vector.x, input_vector.y)
         direction.x = input_vector.normalize().x if input_vector else input_vector.x
@@ -244,12 +255,20 @@ class Player(pygame.sprite.Sprite):
         return direction
 
     def calculate_grid_position(self) -> None:
-        self.topleft_grid_col, self.topleft_grid_row = find_x_y_in_grid(
-            self.rect.topleft[0], self.rect.topleft[1]
-        )
-        self.bottomright_grid_col, self.bottomright_grid_row = find_x_y_in_grid(
-            self.rect.bottomright[0], self.rect.bottomright[1]
-        )
+        if self.is_bot:
+            self.topleft_grid_col, self.topleft_grid_row = find_x_y_in_grid(
+                self.rect.topleft[0], self.rect.topleft[1]
+            )
+            self.bottomright_grid_col, self.bottomright_grid_row = find_x_y_in_grid(
+                self.rect.bottomright[0], self.rect.bottomright[1]
+            )
+        else:
+            self.topleft_grid_col, self.topleft_grid_row = find_x_y_in_grid(
+                self.rect.center[0], self.rect.center[1]
+            )
+            self.bottomright_grid_col, self.bottomright_grid_row = find_x_y_in_grid(
+                self.rect.bottomright[0], self.rect.bottomright[1]
+            )
 
     def compute_path(self) -> None:
         goal = (self.maze.coin.grid_row, self.maze.coin.grid_col)

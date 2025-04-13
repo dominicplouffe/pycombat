@@ -278,15 +278,15 @@ class Title:
             self.btn_vs_bot.handle_event(event)
             self.btn_time.handle_event(event)
             self.btn_options.handle_event(event)
-            self.btn_settings_ok.handle_event(event)
-            self.btn_easy.handle_event(event)
-            self.btn_hard.handle_event(event)
-            self.seed_textbox.handle_event(event)
 
             self.ui_sprites.update(dt, event)
             self.ui_sprites.draw(self.display_surface)
 
             if self.show_settings:
+                self.btn_settings_ok.handle_event(event)
+                self.btn_easy.handle_event(event)
+                self.btn_hard.handle_event(event)
+                self.seed_textbox.handle_event(event)
                 self.draw_settings(dt, event)
 
     def get_seed(self) -> int:
