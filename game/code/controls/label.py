@@ -6,7 +6,7 @@ class Label:
         self,
         text,
         top,
-        left,
+        left=0,
         font_name=None,
         font_size=20,
         text_color="black",
@@ -102,4 +102,15 @@ class Label:
             new_text (str): The new text string.
         """
         self.text = new_text
+        self.render_text()
+
+    def center_text(self, window_width):
+        """
+        Centers the label text horizontally within the window width.
+
+        Parameters:
+            window_width (int): The width of the window.
+        """
+        text_rect = self.text_surface.get_rect(center=(window_width // 2, self.top))
+        self.left = text_rect.left
         self.render_text()

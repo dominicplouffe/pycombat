@@ -53,42 +53,42 @@ class LevelDone:
         stats_label = Label(
             stats_text,
             top=WINDOW_HEIGHT // 2 - 300 + 120,
-            left=WINDOW_WIDTH // 2 - 200 + 75,
             font_size=30,
             text_color=LABEL_COLOR,
             font_name="Menlo",
         )
+        stats_label.center_text(WINDOW_WIDTH)
         stats_label.draw(self.display_surface)
 
         if self.title_state == "game_over" or self.game_mode == "time_attack":
             self.settings_title = Label(
                 "Game Over!",
                 top=WINDOW_HEIGHT // 2 - 300 + 25,
-                left=WINDOW_WIDTH // 2 - 200 + 100,
                 font_size=40,
                 text_color=LABEL_COLOR,
                 font_name="Menlo",
             )
+            self.settings_title.center_text(WINDOW_WIDTH)
             self.settings_title.draw(self.display_surface)
 
             self.r_text = Label(
                 "R to restart the same seed",
                 top=WINDOW_HEIGHT // 2 - 300 + 200,
-                left=WINDOW_WIDTH // 2 - 200 + 40,
                 font_size=20,
                 text_color=LABEL_COLOR,
                 font_name="Menlo",
             )
+            self.r_text.center_text(WINDOW_WIDTH)
             self.r_text.draw(self.display_surface)
         elif self.title_state == "level_done":
             self.settings_title = Label(
                 "Level Completed!",
                 top=WINDOW_HEIGHT // 2 - 300 + 25,
-                left=WINDOW_WIDTH // 2 - 200 + 20,
                 font_size=40,
                 text_color=LABEL_COLOR,
                 font_name="Menlo",
             )
+            self.settings_title.center_text(WINDOW_WIDTH)
             self.settings_title.draw(self.display_surface)
 
             elapsed_time = time.time() - self.start_time
@@ -97,11 +97,11 @@ class LevelDone:
                 self.time_text = Label(
                     f"Next level in {remaining_time} seconds",
                     top=WINDOW_HEIGHT // 2 - 300 + 200,
-                    left=WINDOW_WIDTH // 2 - 200 + 60,
                     font_size=20,
                     text_color=LABEL_COLOR,
                     font_name="Menlo",
                 )
+                self.time_text.center_text(WINDOW_WIDTH)
                 self.time_text.draw(self.display_surface)
             else:
                 self.restart_level(self.difficulty)
@@ -110,63 +110,19 @@ class LevelDone:
         self.m_text = Label(
             "M to return to the main menu",
             top=WINDOW_HEIGHT // 2 - 300 + 240,
-            left=WINDOW_WIDTH // 2 - 200 + 20,
             font_size=20,
             text_color=LABEL_COLOR,
             font_name="Menlo",
         )
+        self.m_text.center_text(WINDOW_WIDTH)
         self.m_text.draw(self.display_surface)
-
-        # Display the messages
-        # for i, message in enumerate(self.messages):
-        #     font_size = 20 if message != "Game Over!" else 30
-        #     left = 450 if message != "Game Over!" else WINDOW_WIDTH // 2 - 200 + 100
-        #     label = Label(
-        #         message,
-        #         top=WINDOW_HEIGHT // 2 - 300 + 200 + i * 40,
-        #         left=left,
-        #         font_size=font_size,
-        #         text_color=LABEL_COLOR,
-        #         font_name="Menlo",
-        #     )
-        #     label.draw(self.display_surface)
-
-        # text = font.render(self.message, True, WHITE)
-        # text_rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
-        # self.display_surface.blit(text, text_rect)
-
-        # if self.game_mode == "time_attack":
-        #     time_text = f"Finish Time: {self.get_total_time():.2f} seconds"
-        #     time_surface = font.render(time_text, True, WHITE)
-        #     time_rect = time_surface.get_rect(center=(WINDOW_WIDTH // 2, 100))
-        #     self.display_surface.blit(time_surface, time_rect)
 
     def update(self, event, change_state) -> None:
         self.display_surface.fill(MOSS_GREEN)
         self.settings_sprites.update(None, event)
         self.settings_sprites.draw(self.display_surface)
-        # self.settings_title.draw(self.display_surface)
 
         self.input(event)
-
-        # if (
-        #     self.title_state == "game_over"
-        #     or self.game_mode == "time_attack"
-        #     and not self.messages_added
-        # ):
-        #     self.messages.append("Game Over!")
-        #     self.messages.append("R to restart the same seed")
-        #     self.messages.append("M to return to the main menu")
-        #     self.messages_added = True
-        # elif self.title_state == "level_done":
-        #     elapsed_time = time.time() - self.start_time
-        #     remaining_time = int(self.countdown_time - elapsed_time)
-        #     if remaining_time > 0:
-        #         self.message = (
-        #             f"Level Completed! Next level in {remaining_time} seconds"
-        #         )
-        #     else:
-        #         self.restart_level(self.difficulty)
         self.run()
 
     def input(self, event) -> None:
