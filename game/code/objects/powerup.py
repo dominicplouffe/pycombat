@@ -34,6 +34,15 @@ class Powerup:
             self.image.blit(
                 self.power_image, (20 - (self.power_image.get_width() // 2), 7)
             )
+        elif powerup_type == "wall":
+            self.power_image = import_image(
+                "game", "support", "images", "wall", "wall_small"
+            )
+            # Resize the image to 20 x 20
+            self.power_image = pygame.transform.scale(self.power_image, (10, 10))
+            self.image.blit(
+                self.power_image, (20 - (self.power_image.get_width() // 2), 7)
+            )
 
         # Draw black text with the value
         font = pygame.font.Font(None, 25)

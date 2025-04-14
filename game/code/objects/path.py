@@ -13,6 +13,8 @@ class Path(pygame.sprite.Sprite):
         super().__init__(obstacles)
         self.image = import_image("game", "support", "images", "path", "path")
         self.rect = self.image.get_rect()
+        self.rect.x = -100
+        self.rect.y = -100
         self.obstacles = obstacles
         self.grid_col = 0
         self.grid_row = 0

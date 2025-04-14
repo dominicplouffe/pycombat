@@ -10,8 +10,6 @@ class Wall(pygame.sprite.Sprite):
         y: int,
     ) -> None:
         super().__init__(groups)
-
-        # print(x + y, x, y, (x + y) % 2)
         if (x + y) % 9 == 0:
             wall_name = "wall4"
         else:

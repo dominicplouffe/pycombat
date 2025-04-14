@@ -18,12 +18,12 @@ class Bullet(pygame.sprite.Sprite):
         self.direction = vector(gun_pos[0], gun_pos[1])
         self.image = import_image("game", "support", "images", "bullet", "bullet2")
         self.rect = self.image.get_rect()
-        self.rect.x = player_topleft[0] - 7.5
-        self.rect.y = player_topleft[1] - 7.5
+        self.rect.x = player_topleft[0] - 0
+        self.rect.y = player_topleft[1] - 0
 
-        self.collider_rect = pygame.Rect(0, 0, 15, 15)
-        self.collider_rect.x = self.rect.x + 33
-        self.collider_rect.y = self.rect.y + 33
+        self.collider_rect = pygame.Rect(0, 0, 30, 30)
+        self.collider_rect.x = self.rect.x + 0
+        self.collider_rect.y = self.rect.y + 0
 
         if self.direction.x == 1:
             self.rect.x += 50

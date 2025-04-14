@@ -74,6 +74,7 @@ class Level:
             bullets=self.bullets,
             all_sprites=self.all_sprites,
             collect_coin_callback=self.collect_coin,
+            add_obstacle_callback=self.add_obstacle,
         )
         self.bot = None
         if game_mode == "vs_bot":
@@ -115,7 +116,7 @@ class Level:
         self.all_sprites = pygame.sprite.Group(
             *self.maze.hit_obstacles,
             self.background,
-            self.maze.obstacles,
+            *self.maze.obstacles,
             self.path,
             self.maze.coin,
             self.bullets,
@@ -134,8 +135,6 @@ class Level:
         self.draw_ui()
 
         self.draw_arrow_in_circle()
-
-        # self.display_level_done(True)
 
     def input(self, event) -> None:
         keys = pygame.key.get_pressed()
@@ -207,8 +206,11 @@ class Level:
         return coins_rect
 
     def draw_power_ups(self) -> None:
+        if self.game_mode != "vs_bot":
+            return
         Powerup(self.display_surface, 7, 55, "bullet", self.player_stats.bullets)
         Powerup(self.display_surface, 7, 102, "path", self.player_stats.path)
+        Powerup(self.display_surface, 7, 149, "wall", self.player_stats.wall)
 
     def draw_level_ui(
         self,
@@ -372,6 +374,13 @@ class Level:
 
         if self.player.coins >= self.target_coins:
             self.display_level_done(True)
+            if self.game_mode == "time_attack":
+                self.player_stats.add_map(
+                    self.seed,
+                    str(self.seed),
+                    False,
+                    self.get_total_time(),
+                )
         elif self.game_mode == "vs_bot" and self.bot.coins >= self.target_coins:
             self.display_level_done(False)
 
@@ -419,3 +428,7 @@ class Level:
         return self.player_stats.power_ups.has_power_up(
             PowerUpChoices.ICE
         ) or self.player_stats.power_ups.has_power_up(PowerUpChoices.ICE_PLUS)
+
+    def add_obstacle(self, x: int, y: int) -> None:
+        self.maze.grid[x][y] = 1
+        self.maze.obstacles, self.maze.hit_obstacles = self.maze.add_obstacle(y, x)

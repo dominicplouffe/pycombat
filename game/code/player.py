@@ -22,6 +22,7 @@ class Player(pygame.sprite.Sprite):
         bullets: pygame.sprite.Group = pygame.sprite.Group(),
         all_sprites: pygame.sprite.Group = pygame.sprite.Group(),
         collect_coin_callback: callable = None,
+        add_obstacle_callback: callable = None,
         speed: int = 350,
         intel_level: int = 0,  # The lower the more intelligent
     ) -> None:
@@ -43,8 +44,10 @@ class Player(pygame.sprite.Sprite):
         self.all_sprites = all_sprites
         self.bullet_pressed = False
         self.power_up_pressed = None
+        self.previous_square = []
 
         self.collect_coin_callback = collect_coin_callback
+        self.add_obstacle_callback = add_obstacle_callback
         self.coins = 0
         self.player_stats = player_stats
         self.intel_level = intel_level
@@ -65,7 +68,7 @@ class Player(pygame.sprite.Sprite):
         self.calculate_grid_position()
 
         self.bullet_timer = Timer(2000)
-        self.bullet_timer.activate()
+        self.power_up_timer = Timer(2000)
 
         self.path = []
         self.path_index = 9
@@ -80,6 +83,7 @@ class Player(pygame.sprite.Sprite):
         self.move(dt)
 
         self.bullet_timer.update()
+        self.power_up_timer.update()
 
         if self.power_up_pressed:
             if self.power_up_pressed + 0.5 < dt:
@@ -125,6 +129,18 @@ class Player(pygame.sprite.Sprite):
             self.player_stats.power_ups.add_path_power_up()
             self.player_stats.remove_path(1)
             self.power_up_pressed = dt
+
+        if (
+            keys[pygame.K_s]
+            and not self.power_up_timer.active
+            and len(self.previous_square) > 1
+        ):
+            self.power_up_pressed = dt
+            self.power_up_timer.activate()
+            if self.add_obstacle_callback:
+                self.add_obstacle_callback(
+                    self.previous_square[-2][0], self.previous_square[-2][1]
+                )
 
         if keys[pygame.K_2]:
             self.player_stats.power_ups.add_path_plus_power_up()
@@ -275,6 +291,17 @@ class Player(pygame.sprite.Sprite):
             self.bottomright_grid_col, self.bottomright_grid_row = find_x_y_in_grid(
                 self.rect.bottomright[0], self.rect.bottomright[1]
             )
+            if (
+                len(self.previous_square) == 0
+                or (self.topleft_grid_row != self.previous_square[-1][0])
+                or (self.topleft_grid_col != self.previous_square[-1][1])
+            ):
+                self.previous_square.append(
+                    (
+                        self.topleft_grid_row,
+                        self.topleft_grid_col,
+                    )
+                )
 
     def compute_path(self) -> None:
         goal = (self.maze.coin.grid_row, self.maze.coin.grid_col)

@@ -7,6 +7,7 @@ class PowerUpChoices:
     PATH_PLUS = "path"
     ICE = "ice"
     ICE_PLUS = "ice_plus"
+    WALL = "wall"
 
 
 class PowerUps:
@@ -47,6 +48,16 @@ class PowerUps:
                 "type": PowerUpChoices.ICE_PLUS,
                 "timer": pygame.time.get_ticks() + 100000,
                 "cost": 15,
+            }
+        )
+
+    def add_wall_power_up(self) -> None:
+        self.timer_power_ups.append(
+            {
+                "type": PowerUpChoices.WALL,
+                "timer": pygame.time.get_ticks() + 10000,
+                "cost": 5,
+                "active": False,
             }
         )
 

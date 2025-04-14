@@ -14,6 +14,8 @@ class Ammo(pygame.sprite.Sprite):
         self.image = import_image("game", "support", "images", "ammo", "ammo")
         self.rect = self.image.get_rect()
         self.obstacles = obstacles
+        self.rect.x = -100
+        self.rect.y = -100
         self.grid_col = 0
         self.grid_row = 0
         self.grid = grid
